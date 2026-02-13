@@ -1,0 +1,29 @@
+{
+    "project_info": {
+        "project_number": "573747224667",
+        "project_id": "mojaz-6e897",
+        "storage_bucket": "mojaz-6e897.firebasestorage.app"
+    },
+    "client": [
+        {
+            "client_info": {
+                "mobilesdk_app_id": "1:573747224667:android:5e6df42cd82d2b912f5f7e",
+                "android_client_info": {
+                    "package_name": "com.example.moujaz_app"
+                }
+            },
+            "oauth_client": [],
+            "api_key": [
+                {
+                    "current_key": "AIzaSyBoP02-CPK4kWRtaIM69W1rgSpp7Q7UZGA"
+                }
+            ],
+            "services": {
+                "appinvite_service": {
+                    "other_platform_oauth_client": []
+                }
+            }
+        }
+    ],
+    "configuration_version": "1"
+}
