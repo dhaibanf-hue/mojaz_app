@@ -9,6 +9,7 @@ import 'ai_assistant_screen.dart';
 import '../providers/app_provider.dart';
 import '../constants.dart';
 import 'package:flutter/services.dart';
+import 'package:animations/animations.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -48,9 +49,19 @@ class _MainScreenState extends State<MainScreen> {
         }
       },
       child: Scaffold(
-        body: IndexedStack(
-          index: provider.currentMainTabIndex,
-          children: _screens,
+        body: PageTransitionSwitcher(
+          duration: const Duration(milliseconds: 400),
+          transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
+            return FadeThroughTransition(
+              animation: primaryAnimation,
+              secondaryAnimation: secondaryAnimation,
+              child: child,
+            );
+          },
+          child: KeyedSubtree(
+            key: ValueKey<int>(provider.currentMainTabIndex),
+            child: _screens[provider.currentMainTabIndex],
+          ),
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {

@@ -33,6 +33,12 @@ ThemeData getLightThemeProvider(bool isModern) {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(isModern ? 24 : 12)),
       color: Colors.white,
     ),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: ZoomPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
+    ),
   );
 }
 
@@ -65,6 +71,12 @@ ThemeData getDarkThemeProvider(bool isModern) {
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(isModern ? 24 : 12)),
       color: Colors.white.withValues(alpha: 0.05),
+    ),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: ZoomPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
     ),
   );
 }

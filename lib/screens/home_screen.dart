@@ -125,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
                    child: Column(
                      crossAxisAlignment: CrossAxisAlignment.start,
                      children: [
-                       _buildRecommendationSection(context, isDark, displayBooks),
+                       _buildRecommendationSection(context, isDark, isModern, displayBooks),
                        const SizedBox(height: 32),
                        _buildDiscoverRandomlyButton(context, isDark, displayBooks),
                        const SizedBox(height: 32),
@@ -264,7 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildRecommendationSection(BuildContext context, bool isDark, List<Book> books) {
+  Widget _buildRecommendationSection(BuildContext context, bool isDark, bool isModern, List<Book> books) {
     if (books.isEmpty) return const SizedBox();
     final book = books.length > 3 ? books[3] : books[0];
     
@@ -515,18 +515,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       fontWeight: FontWeight.w900
                     )
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(8)),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.star, color: Colors.white, size: 10),
-                        SizedBox(width: 2),
-                        Text('4.9', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  )
                 ],
               ),
               GestureDetector(

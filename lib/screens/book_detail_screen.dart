@@ -18,21 +18,22 @@ class BookDetailScreen extends StatelessWidget {
     final bool isDownloaded = provider.downloadedBookIds.contains(book.id);
     final bool isFavorite = provider.favoriteBookIds.contains(book.id);
     final isDark = provider.isDarkMode;
+    final isModern = provider.isModernDesign;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
-          _buildSliverAppBar(context, isFavorite, provider),
+          _buildSliverAppBar(context, isFavorite, provider, isModern),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   _buildMainInfo(context, isDark),
+                   _buildMainInfo(context, isDark, isModern),
                    const SizedBox(height: 32),
-                   _buildActionButtons(context, provider, isDownloaded),
+                   _buildActionButtons(context, provider, isDownloaded, isModern),
                    const SizedBox(height: 32),
                    _buildDescription(context),
                    const SizedBox(height: 32),
@@ -52,11 +53,11 @@ class BookDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSliverAppBar(BuildContext context, bool isFavorite, AppProvider provider) {
+  Widget _buildSliverAppBar(BuildContext context, bool isFavorite, AppProvider provider, bool isModern) {
     return SliverAppBar(
       expandedHeight: 400,
       pinned: true,
-      backgroundColor: AppColors.primaryBg,
+      backgroundColor: isModern ? AppColors.primaryBg : const Color(0xFF1976D2),
       iconTheme: const IconThemeData(color: Colors.white),
       actions: [
         IconButton(
@@ -97,7 +98,8 @@ class BookDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMainInfo(BuildContext context, bool isDark) {
+  Widget _buildMainInfo(BuildContext context, bool isDark, bool isModern) {
+    final primaryColor = isModern ? AppColors.primaryButton : const Color(0xFF2196F3);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -111,7 +113,7 @@ class BookDetailScreen extends StatelessWidget {
             const SizedBox(width: 12),
             _buildInfoChip(Icons.timer, '15 دقيقة', Colors.blue),
             const SizedBox(width: 12),
-            _buildInfoChip(Icons.category, book.category, AppColors.primaryButton),
+            _buildInfoChip(Icons.category, book.category, primaryColor),
           ],
         ),
       ],
@@ -132,7 +134,8 @@ class BookDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, AppProvider provider, bool isDownloaded) {
+  Widget _buildActionButtons(BuildContext context, AppProvider provider, bool isDownloaded, bool isModern) {
+    final primaryColor = isModern ? AppColors.primaryButton : const Color(0xFF2196F3);
     return Row(
       children: [
         Expanded(
@@ -141,11 +144,11 @@ class BookDetailScreen extends StatelessWidget {
             icon: Icon(isDownloaded ? Icons.download_done : Icons.download, size: 18),
             label: Text(isDownloaded ? 'كتاب محمل' : 'تحميل أوفلاين'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: isDownloaded ? AppColors.success : AppColors.primaryButton,
+              backgroundColor: isDownloaded ? AppColors.success : primaryColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(isModern ? 16 : 10)),
             ),
           ),
         ),
@@ -227,12 +230,21 @@ class BookDetailScreen extends StatelessWidget {
   }
 
   Widget _buildBottomPlayButton(BuildContext context) {
+    final provider = Provider.of<AppProvider>(context, listen: false);
+    final isModern = provider.isModernDesign;
+    final primaryColor = isModern ? AppColors.primaryButton : const Color(0xFF2196F3);
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(color: Theme.of(context).cardColor, boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: const Offset(0, -5))]),
       child: ElevatedButton(
         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AudioPlayerScreen(book: book))),
-        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryButton, foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 56), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryColor, 
+          foregroundColor: Colors.white, 
+          minimumSize: const Size(double.infinity, 56), 
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(isModern ? 16 : 10))
+        ),
         child: const Text('ابدأ الاستماع الآن', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       ),
     );
