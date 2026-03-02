@@ -1,214 +1,264 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../constants.dart';
-import 'login_screen.dart';
-import 'register_screen.dart';
-import 'main_screen.dart';
+import '../widgets/page_wrapper.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
 
   @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen>
+    with TickerProviderStateMixin {
+  
+  // 0: waiting, 1: dot appears, 2: dot jumps, 3: morph to "م", 4: full logo, 5: final glow
+  int _phase = 0;
+
+  late AnimationController _tapPulseController;
+  late AnimationController _dotAppearController;
+  late AnimationController _dotJumpController;
+  late AnimationController _morphController;
+  late AnimationController _logoRevealController;
+  late AnimationController _finalGlowController;
+
+  late Animation<double> _tapOpacity;
+  late Animation<double> _dotScale;
+  late Animation<double> _dotJumpX;
+  late Animation<double> _dotJumpY;
+  late Animation<double> _morphProgress;
+  late Animation<double> _logoSlide;
+  late Animation<double> _logoFade;
+  late Animation<double> _subtitleFade;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _tapPulseController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..repeat(reverse: true);
+    _tapOpacity = Tween<double>(begin: 0.3, end: 1.0).animate(CurvedAnimation(parent: _tapPulseController, curve: Curves.easeInOut));
+
+    _dotAppearController = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    _dotScale = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _dotAppearController, curve: Curves.elasticOut));
+
+    _dotJumpController = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
+
+    _morphController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
+    _morphProgress = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _morphController, curve: Curves.easeOutCubic));
+
+    _logoRevealController = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
+    _logoSlide = Tween<double>(begin: -30.0, end: 0.0).animate(CurvedAnimation(parent: _logoRevealController, curve: Curves.easeOutCubic));
+    _logoFade = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _logoRevealController, curve: const Interval(0.0, 0.7, curve: Curves.easeIn)));
+
+    _finalGlowController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000));
+    _subtitleFade = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _finalGlowController, curve: const Interval(0.4, 1.0, curve: Curves.easeIn)));
+  }
+
+  @override
+  void dispose() {
+    _tapPulseController.dispose();
+    _dotAppearController.dispose();
+    _dotJumpController.dispose();
+    _morphController.dispose();
+    _logoRevealController.dispose();
+    _finalGlowController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _startSequence() async {
+    if (_phase != 0) return;
+
+    setState(() => _phase = 1);
+    _tapPulseController.stop();
+    await _dotAppearController.forward();
+
+    final screenW = MediaQuery.of(context).size.width;
+    final screenH = MediaQuery.of(context).size.height;
+    final centerX = screenW / 2;
+    final centerY = screenH / 2;
+    final targetX = centerX + (screenW * 0.12);
+    final targetY = centerY - 10;
+
+    _dotJumpX = Tween<double>(begin: centerX, end: targetX).animate(CurvedAnimation(parent: _dotJumpController, curve: Curves.easeInOutBack));
+    _dotJumpY = Tween<double>(begin: centerY, end: targetY).animate(CurvedAnimation(parent: _dotJumpController, curve: _BounceCurve()));
+
+    setState(() => _phase = 2);
+    await _dotJumpController.forward();
+
+    setState(() => _phase = 3);
+    await _morphController.forward();
+
+    setState(() => _phase = 4);
+    await _logoRevealController.forward();
+
+    setState(() => _phase = 5);
+    await _finalGlowController.forward();
+
+    await Future.delayed(const Duration(seconds: 2));
+    if (mounted) {
+      Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.primaryBg,
-      body: Stack(
-        children: [
-          // Background Mesh Pattern (approximated with custom paint or image, here simple lines)
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.2,
-              child: CustomPaint(painter: MeshPainter()),
-            ),
-          ),
-          
-          // Background Decorative Circles
-          Positioned(
-            top: -40,
-            right: -40,
-            child: Opacity(
-              opacity: 0.4,
-              child: Container(
-                width: 250,
-                height: 250,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white10),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 80,
-            left: -80,
-            child: Opacity(
-              opacity: 0.4,
-              child: Container(
-                width: 300,
-                height: 300,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white10),
-                ),
-              ),
-            ),
-          ),
+    bool isDark = Theme.of(context).brightness == Brightness.dark;
+    Color bg = isDark ? AppColors.newBackgroundDark : AppColors.newBackgroundLight;
+    Color primary = AppColors.newPrimary;
 
-          // Main Content
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Spacer(),
-                  
-                  // Logo Area
-                  Column(
-                    children: [
-                      // Logo Placeholder
-                       Container(
-                        width: 120,
-                        height: 120,
-                        margin: const EdgeInsets.only(bottom: 24),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.logo,
+    return PageWrapper(
+      child: Scaffold(
+        backgroundColor: bg,
+        body: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _startSequence,
+          child: Stack(
+            children: [
+              // Tap Prompt
+              if (_phase == 0)
+                Center(
+                  child: FadeTransition(
+                    opacity: _tapOpacity,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.touch_app_rounded, size: 48, color: primary.withOpacity(0.5)),
+                        const SizedBox(height: 16),
+                        Text(
+                          'اضغط في أي مكان',
+                          style: GoogleFonts.notoKufiArabic(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white70 : AppColors.newTextMain.withOpacity(0.6),
+                          ),
                         ),
-                        child: Center(
-                          child: Icon(Icons.menu_book_rounded, size: 60, color: AppColors.primaryBg),
-                        ),
-                      ),
-                      const Text(
-                        'موجز',
-                        style: TextStyle(
-                          fontSize: 48,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'منصة تلخيص الكتب العربية',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'ملخصات ذكية تناسب وقتك',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white60,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                ),
 
-                  const Spacer(),
-
-                  // Actions
-                  Column(
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        height: 60,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const LoginScreen()),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryButton,
-                            foregroundColor: AppColors.buttonText,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            elevation: 8,
-                          ),
-                          child: const Text(
-                            'تسجيل الدخول',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              // Moving Dot
+              if (_phase >= 1 && _phase <= 2)
+                AnimatedBuilder(
+                  animation: Listenable.merge([_dotAppearController, _dotJumpController]),
+                  builder: (context, child) {
+                    double x = _phase == 1 ? MediaQuery.of(context).size.width / 2 : _dotJumpX.value;
+                    double y = _phase == 1 ? MediaQuery.of(context).size.height / 2 : _dotJumpY.value;
+                    return Positioned(
+                      left: x - 12,
+                      top: y - 12,
+                      child: Transform.scale(
+                        scale: _dotScale.value,
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: primary,
+                            shape: BoxShape.circle,
+                            boxShadow: [BoxShadow(color: primary.withOpacity(0.5), blurRadius: 16)],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'ليس لديك حساب؟ ',
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const RegisterScreen()),
-                              );
-                            },
-                            child: const Text(
-                              'سجل الآن',
-                              style: TextStyle(
-                                color: AppColors.primaryButton,
-                                fontWeight: FontWeight.bold,
+                    );
+                  },
+                ),
+
+              // Morphing Letter Content
+              if (_phase >= 3)
+                Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    textDirection: TextDirection.rtl,
+                    children: [
+                      // The "م"
+                      AnimatedBuilder(
+                        animation: _morphController,
+                        builder: (context, child) {
+                          return Opacity(
+                            opacity: _phase >= 4 ? 1.0 : _morphProgress.value,
+                            child: Text(
+                              'م',
+                              style: GoogleFonts.notoKufiArabic(
+                                fontSize: 52,
+                                fontWeight: FontWeight.w900,
+                                color: isDark ? Colors.white : primary,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      TextButton(
-                        onPressed: () {
-                          // Allow guest access
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (context) => const MainScreen()),
                           );
                         },
-                        child: const Text(
-                          'المتابعة كضيف',
-                          style: TextStyle(
-                            color: Colors.white30,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                      ),
+                      // The "وجز"
+                      if (_phase >= 4)
+                        ClipRect(
+                          child: AnimatedBuilder(
+                            animation: _logoRevealController,
+                            builder: (context, child) {
+                              return Transform.translate(
+                                offset: Offset(_logoSlide.value, 0),
+                                child: Opacity(
+                                  opacity: _logoFade.value,
+                                  child: Text(
+                                    'وجز',
+                                    style: GoogleFonts.notoKufiArabic(
+                                      fontSize: 52,
+                                      fontWeight: FontWeight.w900,
+                                      color: isDark ? Colors.white : primary,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
                     ],
                   ),
-                ],
-              ),
-            ),
+                ),
+
+              // Subtitle
+              if (_phase >= 5)
+                Positioned(
+                  bottom: 100,
+                  left: 0,
+                  right: 0,
+                  child: FadeTransition(
+                    opacity: _subtitleFade,
+                    child: Column(
+                      children: [
+                        Text(
+                          'ثقافة بلا حدود في زمن محدود',
+                          style: GoogleFonts.notoKufiArabic(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        SizedBox(
+                          width: 40,
+                          height: 2,
+                          child: LinearProgressIndicator(
+                            backgroundColor: isDark ? Colors.white10 : Colors.grey[200],
+                            color: primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class MeshPainter extends CustomPainter {
+class _BounceCurve extends Curve {
   @override
-  void paint(Canvas canvas, Size size) {
-    var paint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.5;
-
-    double step = 40;
-    for (double i = 0; i < size.width; i += step) {
-      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
-    }
-    for (double i = 0; i < size.height; i += step) {
-      canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
-    }
+  double transformInternal(double t) {
+    return (t - sin(t * pi) * 0.12).clamp(0.0, 1.0);
   }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

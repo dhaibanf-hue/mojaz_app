@@ -1,44 +1,56 @@
-
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-
-import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/book.dart';
 
 class ApiService {
-  // Use machine IP for physical device testing, 127.0.0.1 for browser
-  static const String baseUrl = 'http://192.168.88.249:8000/api'; 
+  final _client = Supabase.instance.client;
 
+  // 1. Fetch all books from Supabase 'books' table
   Future<List<Book>> fetchBooks() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/books'));
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> body = json.decode(response.body);
-        final List<dynamic> data = body['data']; 
-        return data.map((item) => Book.fromMap(item)).toList();
-      } else {
-        throw Exception('Failed to load books');
-      }
+      final List<dynamic> data = await _client
+          .from('books')
+          .select()
+          .order('created_at', ascending: false);
+          
+      return data.map((item) => Book.fromMap(item)).toList();
     } catch (e) {
-      debugPrint('Error fetching books: $e');
-      throw Exception('Error fetching books: $e');
+      debugPrint('Error fetching books from Supabase: $e');
+      // Fallback to empty list or handle error in UI
+      return [];
     }
   }
 
-  Future<Book> fetchBookDetails(String id) async {
+  // 2. Fetch specific book details
+  Future<Book?> fetchBookDetails(String id) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/books/$id'));
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> body = json.decode(response.body);
-        return Book.fromMap(body['data']);
-      } else {
-        throw Exception('Failed to load book details');
-      }
+      final data = await _client
+          .from('books')
+          .select()
+          .eq('id', id)
+          .single();
+          
+      return Book.fromMap(data);
     } catch (e) {
       debugPrint('Error fetching book details: $e');
-      throw Exception('Error fetching book details: $e');
+      return null;
+    }
+  }
+
+  // 3. User Progress Sync
+  Future<void> syncProgress(String bookId, int seconds) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    try {
+      await _client.from('user_progress').upsert({
+        'user_id': userId,
+        'book_id': bookId,
+        'last_position_seconds': seconds,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      debugPrint('Error syncing progress: $e');
     }
   }
 }

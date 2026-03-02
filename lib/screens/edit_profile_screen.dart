@@ -1,4 +1,6 @@
+
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../constants.dart';
 import '../providers/app_provider.dart';
@@ -13,8 +15,11 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _nameController;
   late TextEditingController _emailController;
-  final _passwordController = TextEditingController();
-  bool _isLoading = false;
+  final TextEditingController _phoneController = TextEditingController(text: "+966 50 123 4567");
+  final TextEditingController _currentPassController = TextEditingController();
+  final TextEditingController _newPassController = TextEditingController();
+  bool _obscureCurrent = true;
+  bool _obscureNew = true;
 
   @override
   void initState() {
@@ -25,128 +30,225 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   @override
-  void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  void _saveChanges() {
-    if (_nameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الاسم لا يمكن أن يكون فارغاً')),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    // Simulate API call
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        final provider = Provider.of<AppProvider>(context, listen: false);
-        provider.loginAsUser(
-          _nameController.text, 
-          _emailController.text,
-          password: _passwordController.text.isNotEmpty ? _passwordController.text : provider.userPassword,
-        );
-        
-        setState(() => _isLoading = false);
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم حفظ التغييرات بنجاح')),
-        );
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final isDark = Provider.of<AppProvider>(context).isDarkMode;
-
+    bool isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBg : Colors.white,
+      backgroundColor: isDark ? AppColors.newBackgroundDark : AppColors.newBackgroundLight,
       appBar: AppBar(
-        title: const Text('تعديل الملف الشخصي', style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: isDark ? AppColors.newBackgroundDark : Colors.white,
         elevation: 0,
-        foregroundColor: isDark ? Colors.white : AppColors.primaryBg,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: CircleAvatar(
+            backgroundColor: isDark ? Colors.grey[800] : Colors.grey[100],
+            child: IconButton(
+              icon: Icon(Icons.chevron_left_rounded, color: isDark ? Colors.white : Colors.black87),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+        ),
+        title: Text(
+          'تعديل الملف الشخصي',
+          style: GoogleFonts.notoKufiArabic(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+        ),
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundImage: const NetworkImage('https://i.pravatar.cc/300'),
-                  backgroundColor: AppColors.primaryBg.withValues(alpha: 0.1),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: AppColors.primaryBg,
+            // Avatar
+            Center(
+              child: Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  Container(
+                    width: 120, height: 120,
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.newPrimary.withOpacity(0.1), width: 4),
+                      boxShadow: [
+                         BoxShadow(color: AppColors.newPrimary.withOpacity(0.1), blurRadius: 20),
+                      ],
+                      image: const DecorationImage(
+                        image: NetworkImage('https://picsum.photos/seed/user/200/200'),
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                    child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
                   ),
-                ),
-              ],
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.newPrimary,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: isDark ? AppColors.newBackgroundDark : Colors.white, width: 2),
+                    ),
+                    child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 18),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'تغيير صورة الملف الشخصي',
+              style: GoogleFonts.notoKufiArabic(
+                fontSize: 12,
+                color: Colors.grey[500],
+              ),
             ),
             const SizedBox(height: 32),
-            _buildTextField('الاسم الكامل', _nameController, Icons.person_outline, isDark),
+
+            // Form
+            _buildTextField(context, 'الاسم الكامل', Icons.person_outline_rounded, _nameController, isDark),
             const SizedBox(height: 16),
-            _buildTextField('البريد الإلكتروني', _emailController, Icons.email_outlined, isDark),
+            _buildTextField(context, 'البريد الإلكتروني', Icons.mail_outline_rounded, _emailController, isDark, keyboardType: TextInputType.emailAddress),
             const SizedBox(height: 16),
-            _buildTextField('كلمة المرور الجديدة', _passwordController, Icons.lock_outline, isDark, obscureText: true),
-            const SizedBox(height: 40),
+            _buildTextField(context, 'رقم الهاتف', Icons.phone_iphone_rounded, _phoneController, isDark, keyboardType: TextInputType.phone),
+            
+            const SizedBox(height: 32),
+            
+            // Password Section
+            Align(
+              alignment: Alignment.centerRight,
+              child: Row(
+                children: [
+                  Container(width: 4, height: 20, decoration: BoxDecoration(color: AppColors.newPrimary, borderRadius: BorderRadius.circular(2))),
+                  const SizedBox(width: 8),
+                  Text(
+                    'تغيير كلمة المرور',
+                    style: GoogleFonts.notoKufiArabic(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildPasswordField(context, 'كلمة المرور الحالية', _currentPassController, isDark, _obscureCurrent, () => setState(() => _obscureCurrent = !_obscureCurrent)),
+            const SizedBox(height: 16),
+            _buildPasswordField(context, 'كلمة المرور الجديدة', _newPassController, isDark, _obscureNew, () => setState(() => _obscureNew = !_obscureNew)),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8.0, left: 4),
+                child: Text('يجب أن تحتوي على ٨ أحرف على الأقل', style: TextStyle(color: Colors.grey[400], fontSize: 10)),
+              ),
+            ),
+
+            const SizedBox(height: 48),
+
+            // Actions
             SizedBox(
               width: double.infinity,
               height: 56,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _saveChanges,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                   // Save logic: update AppProvider immediately
+                   final provider = Provider.of<AppProvider>(context, listen: false);
+                   provider.loginAsUser(
+                     _nameController.text.trim(),
+                     _emailController.text.trim(),
+                     password: _newPassController.text.isNotEmpty
+                         ? _newPassController.text
+                         : provider.userPassword,
+                   );
+                   ScaffoldMessenger.of(context).showSnackBar(
+                     const SnackBar(
+                       content: Text('تم حفظ التغييرات بنجاح'),
+                       behavior: SnackBarBehavior.floating,
+                     ),
+                   );
+                   Navigator.pop(context);
+                },
+                icon: const Icon(Icons.check_circle_outline_rounded, color: Colors.white),
+                label: Text('حفظ التغييرات', style: GoogleFonts.notoKufiArabic(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryBg,
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppColors.newPrimary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 0,
+                  elevation: 4,
+                  shadowColor: AppColors.newPrimary.withOpacity(0.4),
                 ),
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('حفظ التغييرات', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('إلغاء', style: GoogleFonts.notoKufiArabic(color: Colors.grey[500], fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(height: 32),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, IconData icon, bool isDark, {bool obscureText = false}) {
+  Widget _buildTextField(BuildContext context, String label, IconData icon, TextEditingController controller, bool isDark, {TextInputType? keyboardType}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : AppColors.secondaryText)),
+        Text(label, style: GoogleFonts.notoKufiArabic(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? Colors.grey[400] : Colors.grey[600])),
         const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          obscureText: obscureText,
-          style: TextStyle(color: isDark ? Colors.white : AppColors.primaryBg),
-          decoration: InputDecoration(
-            prefixIcon: Icon(icon, color: AppColors.primaryBg, size: 22),
-            filled: true,
-            fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8F9FA),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
+        Container(
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+               if(!isDark) BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))
+            ],
+            border: Border.all(color: isDark ? Colors.transparent : Colors.grey[200]!),
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            textAlign: TextAlign.right, // RTL
+            style: GoogleFonts.notoKufiArabic(fontSize: 14, color: isDark ? Colors.white : Colors.black87),
+            decoration: InputDecoration(
+              prefixIcon: Icon(icon, color: Colors.grey[400]), 
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 16),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPasswordField(BuildContext context, String label, TextEditingController controller, bool isDark, bool obscure, VoidCallback toggle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: GoogleFonts.notoKufiArabic(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? Colors.grey[400] : Colors.grey[600])),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+             color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+             borderRadius: BorderRadius.circular(12),
+             boxShadow: [
+                if(!isDark) BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))
+             ],
+             border: Border.all(color: isDark ? Colors.transparent : Colors.grey[200]!),
+          ),
+          child: TextField(
+            controller: controller,
+            obscureText: obscure,
+            textAlign: TextAlign.right,
+            style: GoogleFonts.notoKufiArabic(fontSize: 14, color: isDark ? Colors.white : Colors.black87),
+            decoration: InputDecoration(
+              prefixIcon: Icon(obscure ? Icons.lock_outline_rounded : Icons.lock_open_rounded, color: Colors.grey[400]),
+              suffixIcon: IconButton(
+                icon: Icon(obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.grey[400]),
+                onPressed: toggle,
+              ),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 16),
+            ),
           ),
         ),
       ],

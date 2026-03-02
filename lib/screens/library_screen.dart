@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../constants.dart';
 import '../models/book.dart';
 import '../providers/app_provider.dart';
+import '../constants.dart';
 import 'book_detail_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
@@ -14,141 +16,237 @@ class LibraryScreen extends StatefulWidget {
 
 class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final TextEditingController _searchController = TextEditingController();
+  String _localQuery = "";
 
   @override
   void initState() {
     super.initState();
-    final provider = Provider.of<AppProvider>(context, listen: false);
-    _tabController = TabController(length: 4, vsync: this, initialIndex: provider.libraryInitialTab);
-    
-    // Listen for tab changes from other screens (like Profile)
-    provider.addListener(_onProviderChange);
-  }
-
-  void _onProviderChange() {
-    final provider = Provider.of<AppProvider>(context, listen: false);
-    if (_tabController.index != provider.libraryInitialTab) {
-      _tabController.animateTo(provider.libraryInitialTab);
-    }
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
   void dispose() {
-    final provider = Provider.of<AppProvider>(context, listen: false);
-    provider.removeListener(_onProviderChange);
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    bool isDark = Theme.of(context).brightness == Brightness.dark;
     final provider = Provider.of<AppProvider>(context);
+
+    // Filtering Logic (Synced with Provider)
+    final allBooks = provider.liveBooks.isNotEmpty ? provider.liveBooks : dummyBooks;
     
-    final inProgress = dummyBooks.take(2).toList();
-    final completed = dummyBooks.skip(2).take(1).toList();
-    final saved = dummyBooks.where((b) => provider.downloadedBookIds.contains(b.id)).toList();
-    final favorites = dummyBooks.where((b) => provider.favoriteBookIds.contains(b.id)).toList();
+    // Filter by Query if exists
+    final filtered = allBooks.where((b) => 
+      b.title.toLowerCase().contains(_localQuery.toLowerCase()) || 
+      b.author.toLowerCase().contains(_localQuery.toLowerCase())
+    ).toList();
+
+    final inProgress = filtered.where((b) => provider.getBookProgress(b.id) > 0 && provider.getBookProgress(b.id) < 850).toList();
+    final completed = filtered.where((b) => provider.getBookProgress(b.id) >= 850).toList();
+    final downloaded = filtered.where((b) => provider.downloadedBookIds.contains(b.id)).toList();
+    final favorites = filtered.where((b) => provider.favoriteBookIds.contains(b.id)).toList();
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: Text(
-          'مكتبتي',
-          style: TextStyle(
-            color: Theme.of(context).textTheme.titleLarge?.color, 
-            fontWeight: FontWeight.bold
-          ),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          labelColor: AppColors.primaryButton,
-          unselectedLabelColor: AppColors.secondaryText,
-          indicatorColor: AppColors.primaryButton,
-          indicatorSize: TabBarIndicatorSize.label,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-          indicatorWeight: 3,
-          onTap: (index) => provider.setLibraryTab(index),
-          tabs: const [
-            Tab(text: 'قيد القراءة'),
-            Tab(text: 'تم الإنجاز'),
-            Tab(text: 'المحملة'),
-            Tab(text: 'المفضلة'),
+      backgroundColor: isDark ? AppColors.newBackgroundDark : AppColors.newBackgroundLight,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                children: [
+                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'مكتبتي',
+                        style: GoogleFonts.notoKufiArabic(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.auto_stories_rounded, color: AppColors.newPrimary, size: 24),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Inner Search
+                  Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E293B) : Colors.grey[50],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (v) => setState(() => _localQuery = v),
+                      textAlign: TextAlign.right,
+                      decoration: InputDecoration(
+                        hintText: 'ابحث داخل مكتبتك...',
+                        hintStyle: GoogleFonts.notoKufiArabic(fontSize: 12, color: Colors.grey[500]),
+                        prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Colors.grey),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Advanced Tabs with Counters
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                children: [
+                  _buildTab(0, 'بدأت قراءتها', inProgress.length, isDark),
+                  _buildTab(1, 'منجزة', completed.length, isDark),
+                  _buildTab(2, 'بدون إنترنت', downloaded.length, isDark),
+                  _buildTab(3, 'محفوظة', favorites.length, isDark),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+
+            // Content
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildList(inProgress, 'reading', provider, isDark),
+                  _buildList(completed, 'done', provider, isDark),
+                  _buildList(downloaded, 'offline', provider, isDark),
+                  _buildList(favorites, 'saved', provider, isDark),
+                ],
+              ),
+            ),
           ],
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildBookList(context, inProgress, true),
-          _buildBookList(context, completed, false),
-          _buildBookList(context, saved, false),
-          _buildBookList(context, favorites, false),
-        ],
       ),
     );
   }
 
-  Widget _buildBookList(BuildContext context, List<Book> books, bool showProgress) {
+  Widget _buildTab(int index, String label, int count, bool isDark) {
+    return AnimatedBuilder(
+      animation: _tabController,
+      builder: (context, _) {
+        final active = _tabController.index == index;
+        return GestureDetector(
+          onTap: () => _tabController.animateTo(index),
+          child: Container(
+            margin: const EdgeInsets.only(left: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: active ? AppColors.newPrimary : (isDark ? Colors.white.withOpacity(0.05) : Colors.white),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: active ? AppColors.newPrimary : (isDark ? Colors.white12 : Colors.grey[200]!)),
+            ),
+            child: Row(
+              children: [
+                if (count > 0) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: active ? Colors.white24 : AppColors.newPrimary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text('$count', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Text(
+                  label,
+                  style: GoogleFonts.notoKufiArabic(
+                    fontSize: 12,
+                    fontWeight: active ? FontWeight.bold : FontWeight.w500,
+                    color: active ? Colors.white : (isDark ? Colors.grey[400] : Colors.grey[600]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildList(List<Book> books, String type, AppProvider provider, bool isDark) {
     if (books.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.library_books_outlined, size: 80, color: AppColors.secondaryText.withValues(alpha: 0.2)),
+            Opacity(opacity: 0.3, child: Icon(Icons.auto_stories_outlined, size: 80, color: AppColors.newPrimary)),
             const SizedBox(height: 16),
-            const Text(
-              'مكتبتك تنتظر أول كتاب!', 
-              style: TextStyle(color: AppColors.secondaryText, fontWeight: FontWeight.bold)
-            ),
+            Text('لا يوجد محتوى في هذا القسم', style: GoogleFonts.notoKufiArabic(color: Colors.grey[500])),
           ],
         ),
       );
     }
+
     return ListView.separated(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 120),
       itemCount: books.length,
-      separatorBuilder: (c, i) => const SizedBox(height: 20),
+      separatorBuilder: (_, __) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
         final book = books[index];
-        return GestureDetector(
-          onTap: () {
-            Navigator.push(
-               context,
-               MaterialPageRoute(
-                 builder: (context) => BookDetailScreen(book: book),
-               ),
-             );
-          },
+        final progressSeconds = provider.getBookProgress(book.id);
+        final total = 900; // Mock 15m
+        final percent = (progressSeconds / total).clamp(0.0, 1.0);
+
+        return InkWell(
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailScreen(book: book))),
+          borderRadius: BorderRadius.circular(20),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                )
-              ],
-              border: Border.all(color: AppColors.secondaryText.withValues(alpha: 0.1)),
+              border: Border.all(color: isDark ? Colors.white10 : Colors.grey[100]!),
             ),
             child: Row(
               children: [
-                Hero(
-                  tag: 'lib-${book.id}',
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      book.cover,
-                      width: 70,
-                      height: 100,
-                      fit: BoxFit.cover,
-                    ),
+                // Cover + Progress Ring Overlay
+                SizedBox(
+                  width: 60, height: 85,
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: CachedNetworkImage(imageUrl: book.cover, fit: BoxFit.cover, width: 60, height: 85),
+                      ),
+                      Positioned(
+                        bottom: 4, right: 4,
+                        child: Container(
+                          width: 24, height: 24,
+                          decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              value: percent,
+                              strokeWidth: 2,
+                              color: AppColors.newPrimary,
+                              backgroundColor: Colors.white24,
+                            ),
+                          ),
+                        ),
+                      )
+                    ],
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -156,57 +254,39 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        book.title,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        book.author,
-                        style: const TextStyle(fontSize: 12, color: AppColors.secondaryText),
-                      ),
-                      const SizedBox(height: 16),
-                      if (showProgress) 
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('أنهيت 60%', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primaryButton)),
-                                Text('باقي 5 دقائق', style: TextStyle(fontSize: 10, color: AppColors.secondaryText)),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: LinearProgressIndicator(
-                                value: 0.6,
-                                minHeight: 6,
-                                backgroundColor: AppColors.primaryButton.withValues(alpha: 0.1),
-                                color: AppColors.primaryButton,
-                              ),
-                            ),
-                          ],
-                        )
-                      else
-                        Row(
-                          children: [
-                            Container(
-                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                               decoration: BoxDecoration(
-                                 color: AppColors.success.withValues(alpha: 0.1),
-                                 borderRadius: BorderRadius.circular(8),
-                               ),
-                               child: const Text('مكتمل', style: TextStyle(color: AppColors.success, fontSize: 10, fontWeight: FontWeight.bold)),
-                            ),
-                            const SizedBox(width: 8),
-                            const Text('15 يناير 2024', style: TextStyle(fontSize: 10, color: AppColors.secondaryText)),
-                          ],
-                        ),
+                      Text(book.title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.notoKufiArabic(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+                      Text(book.author, style: GoogleFonts.notoKufiArabic(fontSize: 11, color: Colors.grey[500])),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                           Container(
+                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                             decoration: BoxDecoration(color: AppColors.newPrimary.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                             child: Text(type == 'done' ? 'مكتمل' : '${(percent * 100).toInt()}%', 
+                                 style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.newPrimary)),
+                           ),
+                           const Spacer(),
+                           // Quick Actions
+                           IconButton(
+                             icon: Icon(Icons.play_circle_fill_rounded, color: AppColors.newPrimary, size: 28),
+                             onPressed: () => provider.playBook(book),
+                             padding: EdgeInsets.zero,
+                             constraints: const BoxConstraints(),
+                           ),
+                           const SizedBox(width: 8),
+                           IconButton(
+                             icon: Icon(type == 'saved' ? Icons.favorite_rounded : Icons.more_vert_rounded, 
+                                 color: type == 'saved' ? Colors.redAccent : Colors.grey),
+                             onPressed: () => provider.toggleFavorite(book),
+                             padding: EdgeInsets.zero,
+                             constraints: const BoxConstraints(),
+                           ),
+                        ],
+                      )
                     ],
                   ),
-                )
+                ),
               ],
             ),
           ),

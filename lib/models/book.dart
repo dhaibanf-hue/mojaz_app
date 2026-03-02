@@ -8,6 +8,7 @@ class Book {
   final String category;
   final int pageCount;
   final bool isPremium;
+  final String? subtitle;
   final String? targetAudience;
   final String audioUrl;
 
@@ -21,22 +22,26 @@ class Book {
     required this.category,
     required this.pageCount,
     this.isPremium = false,
+    this.subtitle,
     this.targetAudience,
     required this.audioUrl,
   });
 
   factory Book.fromMap(Map<String, dynamic> map) {
     return Book(
-      id: map['id'].toString(),
+      id: map['id']?.toString() ?? '',
       title: map['title'] ?? '',
       author: map['author'] ?? 'Unknown Author',
-      cover: _fixUrl(map['cover_image_url']) ?? 'https://picsum.photos/200/300',
+      // البحث عن الرابط في عدة مسميات محتملة لضمان التوافق
+      cover: _fixUrl(map['cover_image_url']) ?? _fixUrl(map['cover_image']) ?? _fixUrl(map['cover_url']) ?? 'https://picsum.photos/200/300',
       rating: 4.5,
-      description: map['summary'] ?? '',
-      category: map['category'] != null ? map['category']['name'] : 'عام',
+      description: map['summary'] ?? map['description'] ?? map['content_text'] ?? '',
+      category: map['category'] != null ? (map['category'] is Map ? map['category']['name'] : map['category'].toString()) : 'عام',
       pageCount: 15,
       isPremium: false,
-      audioUrl: _fixUrl(map['audio_file_url']) ?? '',
+      subtitle: map['subtitle'] ?? map['description'] ?? map['author'],
+      targetAudience: map['target_audience'],
+      audioUrl: _fixUrl(map['audio_file_url']) ?? _fixUrl(map['audio_file']) ?? _fixUrl(map['audio_url']) ?? '',
     );
   }
 

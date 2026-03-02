@@ -9,6 +9,7 @@ import 'search_screen.dart';
 import 'category_books_screen.dart';
 import '../models/book.dart';
 import '../providers/app_provider.dart';
+import '../widgets/page_wrapper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -55,121 +56,123 @@ class _HomeScreenState extends State<HomeScreen> {
     final displayBooks = provider.liveBooks.isNotEmpty ? provider.liveBooks : dummyBooks;
     final categories = displayBooks.map((e) => e.category).toSet().toList();
     
-    return Scaffold(
-      backgroundColor: isModern ? Theme.of(context).scaffoldBackgroundColor : (isDark ? AppColors.darkBg : const Color(0xFFF5F7FA)),
-      body: RefreshIndicator(
-        onRefresh: () => provider.fetchBooks(),
-        child: Stack(
-          children: [
-            CustomScrollView(
-              controller: _scrollController,
-              slivers: [
-                 SliverToBoxAdapter(child: SizedBox(height: MediaQuery.of(context).padding.top + 50)),
-                 
-                  // Removed permanent loader above search bar as per user request
-                 
-                 if (provider.errorMessage != null && provider.liveBooks.isEmpty)
-                    SliverToBoxAdapter(
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.redAccent.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
-                        ),
-                        child: Column(
-                          children: [
-                            const Icon(Icons.error_outline, color: Colors.white70, size: 32),
-                            const SizedBox(height: 12),
-                            Text(
-                              provider.errorMessage!,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(color: Colors.white, fontSize: 13),
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton.icon(
-                              onPressed: () => provider.fetchBooks(forceRefresh: true),
-                              icon: const Icon(Icons.refresh, size: 18),
-                              label: const Text('إعادة المحاولة'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: AppColors.primaryBg,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    return PageWrapper(
+      child: Scaffold(
+        backgroundColor: isModern ? Theme.of(context).scaffoldBackgroundColor : (isDark ? AppColors.darkBg : const Color(0xFFF5F7FA)),
+        body: RefreshIndicator(
+          onRefresh: () => provider.fetchBooks(),
+          child: Stack(
+            children: [
+              CustomScrollView(
+                controller: _scrollController,
+                slivers: [
+                   SliverToBoxAdapter(child: SizedBox(height: MediaQuery.of(context).padding.top + 50)),
+                   
+                    // Removed permanent loader above search bar as per user request
+                   
+                   if (provider.errorMessage != null && provider.liveBooks.isEmpty)
+                      SliverToBoxAdapter(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+                          ),
+                          child: Column(
+                            children: [
+                              const Icon(Icons.error_outline, color: Colors.white70, size: 32),
+                              const SizedBox(height: 12),
+                              Text(
+                                provider.errorMessage!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: Colors.white, fontSize: 13),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 16),
+                              ElevatedButton.icon(
+                                onPressed: () => provider.fetchBooks(forceRefresh: true),
+                                icon: const Icon(Icons.refresh, size: 18),
+                                label: const Text('إعادة المحاولة'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: AppColors.primaryBg,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-               
-               // Search Bar
-               SliverToBoxAdapter(
-                 child: Padding(
-                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                   child: _buildSearchBar(context),
-                 ),
-               ),
-
-               // Categories
-               SliverToBoxAdapter(child: _buildCategories(context)),
-
-               SliverToBoxAdapter(
-                 child: Container(
-                   margin: const EdgeInsets.only(top: 20),
-                   decoration: BoxDecoration(
-                     color: Theme.of(context).scaffoldBackgroundColor,
-                     borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
-                   ),
-                   padding: const EdgeInsets.fromLTRB(0, 30, 0, 30),
-                   child: Column(
-                     crossAxisAlignment: CrossAxisAlignment.start,
-                     children: [
-                       _buildRecommendationSection(context, isDark, isModern, displayBooks),
-                       const SizedBox(height: 32),
-                       _buildDiscoverRandomlyButton(context, isDark, displayBooks),
-                       const SizedBox(height: 32),
-
-                       _buildSectionHeader(context, 'أكمل الاستماع', 'تابع من حيث توقفت', () {}),
-                       const SizedBox(height: 16),
-                       _buildContinueReadingCard(context),
-
-                       const SizedBox(height: 32),
-
-                       _buildSectionHeader(context, 'رائد الآن', 'كتب يتحدد عنها الجميع', () {}),
-                       const SizedBox(height: 20),
-                       _buildHorizontalBookList(displayBooks, 'trending'),
-
-                       const SizedBox(height: 32),
-
-                       ...categories.map((cat) {
-                         final books = displayBooks.where((b) => b.category == cat).toList();
-                         return Column(
-                           crossAxisAlignment: CrossAxisAlignment.start,
-                           children: [
-                             _buildSectionHeader(context, 'عالم $cat', '', () {
-                                Navigator.push(context, MaterialPageRoute(builder: (_) => CategoryBooksScreen(categoryName: cat, books: books)));
-                             }),
-                             const SizedBox(height: 20),
-                             _buildHorizontalBookList(books, cat),
-                             const SizedBox(height: 32),
-                           ],
-                         );
-                       }),
-                       const SizedBox(height: 32),
-                       _buildSectionHeader(context, 'انشر روتينك', 'شارك ما تعلمته اليوم', () {}),
-                       const SizedBox(height: 16),
-                       _buildShareStoryCard(context, isDark),
-                       const SizedBox(height: 48),
-                     ],
+                 
+                 // Search Bar
+                 SliverToBoxAdapter(
+                   child: Padding(
+                     padding: const EdgeInsets.symmetric(horizontal: 24),
+                     child: _buildSearchBar(context),
                    ),
                  ),
-               ),
+  
+                 // Categories
+                 SliverToBoxAdapter(child: _buildCategories(context)),
+  
+                 SliverToBoxAdapter(
+                   child: Container(
+                     margin: const EdgeInsets.only(top: 20),
+                     decoration: BoxDecoration(
+                       color: Theme.of(context).scaffoldBackgroundColor,
+                       borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
+                     ),
+                     padding: const EdgeInsets.fromLTRB(0, 30, 0, 30),
+                     child: Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         _buildRecommendationSection(context, isDark, isModern, displayBooks),
+                         const SizedBox(height: 32),
+                         _buildDiscoverRandomlyButton(context, isDark, displayBooks),
+                         const SizedBox(height: 32),
+  
+                         _buildSectionHeader(context, 'أكمل الاستماع', 'تابع من حيث توقفت', () {}),
+                         const SizedBox(height: 16),
+                         _buildContinueReadingCard(context),
+  
+                         const SizedBox(height: 32),
+  
+                         _buildSectionHeader(context, 'رائد الآن', 'كتب يتحدد عنها الجميع', () {}),
+                         const SizedBox(height: 20),
+                         _buildHorizontalBookList(displayBooks, 'trending'),
+  
+                         const SizedBox(height: 32),
+  
+                         ...categories.map((cat) {
+                           final books = displayBooks.where((b) => b.category == cat).toList();
+                           return Column(
+                             crossAxisAlignment: CrossAxisAlignment.start,
+                             children: [
+                               _buildSectionHeader(context, 'عالم $cat', '', () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => CategoryBooksScreen(categoryName: cat, books: books)));
+                               }),
+                               const SizedBox(height: 20),
+                               _buildHorizontalBookList(books, cat),
+                               const SizedBox(height: 32),
+                             ],
+                           );
+                         }),
+                         const SizedBox(height: 32),
+                         _buildSectionHeader(context, 'انشر روتينك', 'شارك ما تعلمته اليوم', () {}),
+                         const SizedBox(height: 16),
+                         _buildShareStoryCard(context, isDark),
+                         const SizedBox(height: 48),
+                       ],
+                     ),
+                   ),
+                 ),
+              ],
+            ),
+  
+              _buildHeader(context),
             ],
           ),
-
-            _buildHeader(context),
-          ],
         ),
       ),
     );

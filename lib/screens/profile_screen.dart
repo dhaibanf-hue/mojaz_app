@@ -1,25 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../constants.dart';
 import '../providers/app_provider.dart';
-import 'login_screen.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
-
-  void _showPlaceholder(BuildContext context, String title) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title, textAlign: TextAlign.right),
-        content: const Text('هذه الميزة ستكون متاحة قريباً في التحديث القادم!', textAlign: TextAlign.right),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('حسناً'))
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,342 +14,164 @@ class ProfileScreen extends StatelessWidget {
     final isDark = provider.isDarkMode;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildProfileHeader(context, provider),
-            const SizedBox(height: 80),
-
-            // Stats Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
-                children: [
-                  _buildStatCard(
-                    context, 
-                    'سلسلة القراءة', 
-                    '${provider.streak} أيام', 
-                    Icons.local_fire_department_rounded, 
-                    Colors.orange,
-                    isDark
-                  ),
-                  const SizedBox(width: 16),
-                  _buildStatCard(
-                    context, 
-                    'تحدي الأسبوع', 
-                    '${(provider.weeklyGoalProgress * 100).toInt()}%', 
-                    Icons.emoji_events_rounded, 
-                    AppColors.gold,
-                    isDark
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Premium Card
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: _buildPremiumCard(context),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Settings List
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                   _buildSettingsItem(
-                    context, 
-                    Icons.dark_mode_outlined, 
-                    'الوضع الليلي', 
-                    trailing: Transform.scale(
-                      scale: 0.8,
-                      child: Switch(
-                        value: provider.isDarkMode,
-                        onChanged: (_) => provider.toggleTheme(),
-                        activeColor: AppColors.primaryButton,
-                        inactiveTrackColor: Colors.grey.withValues(alpha: 0.1),
-                      ),
-                    ),
-                    isDark: isDark
-                  ),
-                  _buildSettingsItem(
-                    context, 
-                    Icons.auto_awesome_outlined, 
-                    'التصميم المطور (V2)', 
-                    trailing: Transform.scale(
-                      scale: 0.8,
-                      child: Switch(
-                        value: provider.isModernDesign,
-                        onChanged: (_) => provider.toggleDesign(),
-                        activeColor: AppColors.primaryButton,
-                        inactiveTrackColor: Colors.grey.withValues(alpha: 0.1),
-                      ),
-                    ),
-                    isDark: isDark
-                  ),
-                  _buildSettingsItem(
-                    context, 
-                    Icons.favorite_border_rounded, 
-                    'كتبي المفضلة', 
-                    showArrow: true, 
-                    isDark: isDark,
-                    onTap: () {
-                      provider.setLibraryTab(3); // Favorites tab index
-                      provider.setMainTab(2); // Library screen index
-                    }
-                  ),
-                  _buildSettingsItem(context, Icons.watch_outlined, 'مزامنة الساعة الذكية', showArrow: true, isDark: isDark, onTap: () => _showPlaceholder(context, 'مزامنة الساعة')),
-                  _buildSettingsItem(context, Icons.person_add_alt_1_outlined, 'ادعُ الأصدقاء (نظام الإحالات)', showArrow: true, isDark: isDark, onTap: () => _showPlaceholder(context, 'نظام الإحالات')),
-                  _buildSettingsItem(context, Icons.notifications_none_rounded, 'تنبيهات القراءة', showArrow: true, isDark: isDark, onTap: () => _showPlaceholder(context, 'تنبيهات القراءة')),
-                  _buildSettingsItem(context, Icons.help_outline_rounded, 'مركز المساعدة', showArrow: true, isDark: isDark, onTap: () => _showPlaceholder(context, 'مركز المساعدة')),
-                  
-                  if (provider.isGuest)
-                     _buildSettingsItem(
-                       context, 
-                       Icons.login_rounded, 
-                       'تسجيل الدخول', 
-                       isDark: isDark,
-                       onTap: () {
-                         Navigator.of(context).pushAndRemoveUntil(
-                           MaterialPageRoute(builder: (context) => const LoginScreen()),
-                           (route) => false,
-                         );
-                       },
-                     )
-                  else
-                    _buildSettingsItem(
-                      context, 
-                      Icons.logout_rounded, 
-                      'تسجيل الخروج', 
-                      isDestructive: true, 
-                      isDark: isDark,
-                      onTap: () {
-                        provider.logout();
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (context) => const LoginScreen()),
-                          (route) => false,
-                        );
-                      },
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 100),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileHeader(BuildContext context, AppProvider provider) {
-    final isDark = provider.isDarkMode;
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          height: 240,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-              colors: [
-                AppColors.primaryBg, 
-                AppColors.primaryBg.withValues(alpha: 0.8)
-              ],
-            ),
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(50), 
-              bottomRight: Radius.circular(50)
-            ),
-          ),
-        ),
-        Positioned(
-          top: 60, left: 24, right: 24,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'الملف الشخصي', 
-                style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12)
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.settings_outlined, color: Colors.white), 
-                  onPressed: () {
-                    if (provider.isGuest) {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
-                    } else {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen()));
-                    }
-                  }
-                ),
-              ),
-            ],
-          ),
-        ),
-        Positioned(
-          bottom: -60, left: 0, right: 0,
+      backgroundColor: isDark ? AppColors.newBackgroundDark : AppColors.newBackgroundLight,
+      body: SafeArea(
+        bottom: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 120),
           child: Column(
             children: [
-              Container(
-                width: 120, height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 4),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20)
-                  ],
-                  image: DecorationImage(
-                    image: NetworkImage(provider.isGuest ? 'https://picsum.photos/seed/guest/150/150' : 'https://i.pravatar.cc/300'), 
-                    fit: BoxFit.cover
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                provider.userName, 
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 24, 
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: -0.5,
-                  color: isDark ? Colors.white : AppColors.primaryBg,
-                )
-              ),
-              Text(
-                provider.isGuest ? 'حساب ضيف' : provider.userEmail,
-                style: const TextStyle(color: AppColors.secondaryText, fontSize: 13),
-              )
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+              // Header & Profile Card
+              _buildModernHeader(context, provider, isDark),
+              
+              // Gamified Rank Card
+              _buildRankCard(context, provider, isDark),
 
-  Widget _buildStatCard(BuildContext context, String title, String value, IconData icon, Color color, bool isDark) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05)
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4)
-            )
-          ]
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              value, 
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
-            ),
-            Text(
-              title, 
-              style: const TextStyle(fontSize: 11, color: AppColors.secondaryText)
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPremiumCard(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E1E1E), Color(0xFF323232)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight
-        ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 20,
-            offset: const Offset(0, 10)
-          )
-        ]
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -20, top: -20,
-            child: Icon(Icons.star_rounded, size: 100, color: Colors.white.withValues(alpha: 0.05)),
-          ),
-          Row(
-            children: [
-              Expanded(
+              // Stats Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      'نشاطك هذا الأسبوع',
+                      style: GoogleFonts.notoKufiArabic(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.gold,
-                            borderRadius: BorderRadius.circular(8)
-                          ),
-                          child: const Text(
-                            'PREMIUM', 
-                            style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 10)
-                          ),
-                        ),
+                        _buildStatCard(context, '${provider.completedBookIds.length}', 'ملخصات منجزة', Icons.check_circle_rounded, isDark),
+                        const SizedBox(width: 12),
+                        _buildStatCard(context, '${provider.totalListeningMinutes}', 'دقيقة استماع', Icons.timer_rounded, isDark),
                       ],
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'موجز بريميوم', 
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'وصول غير محدود لجميع الملخصات والحصريات الصباحية', 
-                      style: TextStyle(color: Colors.white60, fontSize: 11, height: 1.4)
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
-              ElevatedButton(
-                onPressed: () => _showPlaceholder(context, 'الاشتراك في بريميوم'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.gold, 
-                  foregroundColor: Colors.black,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))
+
+              // Achievements Section
+              _buildAchievementsSection(context, isDark),
+
+              // Menu Options
+              _buildMenuSection(context, provider, isDark),
+              
+              const SizedBox(height: 32),
+              
+              // Logout Button
+              _buildLogoutButton(context, provider, isDark),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernHeader(BuildContext context, AppProvider provider, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 35,
+            backgroundColor: AppColors.newPrimary.withOpacity(0.1),
+            backgroundImage: const NetworkImage('https://picsum.photos/seed/user/200/200'),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  provider.userName,
+                  style: GoogleFonts.notoKufiArabic(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
                 ),
-                child: const Text('اشترك الآن', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              )
+                Text(
+                  'قارئ مثابر منذ 2024',
+                  style: GoogleFonts.notoKufiArabic(
+                    fontSize: 12,
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.edit_note_rounded, color: AppColors.newPrimary),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen())),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRankCard(BuildContext context, AppProvider provider, bool isDark) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark 
+            ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+            : [const Color(0xFF0F3D3E), const Color(0xFF0A2627)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.newPrimary.withOpacity(0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          )
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'رتبة القارئ',
+                    style: GoogleFonts.notoKufiArabic(color: Colors.white70, fontSize: 12),
+                  ),
+                  Text(
+                    'خبير المعرفة',
+                    style: GoogleFonts.notoKufiArabic(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.emoji_events_rounded, color: Colors.amber, size: 30),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildRankStat('5,240', 'نقطة إنجاز', Icons.auto_awesome_rounded),
+              _buildRankDivider(),
+              _buildRankStat('${provider.streak}', 'أيام استمرار', Icons.local_fire_department_rounded),
             ],
           ),
         ],
@@ -370,45 +179,208 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSettingsItem(
-    BuildContext context, 
-    IconData icon, 
-    String title, 
-    {Widget? trailing, bool showArrow = false, bool isDestructive = false, required bool isDark, VoidCallback? onTap}
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05)
+  Widget _buildRankStat(String value, String label, IconData icon) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: Colors.amber, size: 14),
+            const SizedBox(width: 4),
+            Text(
+              value,
+              style: GoogleFonts.manrope(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
+        Text(
+          label,
+          style: GoogleFonts.notoKufiArabic(color: Colors.white60, fontSize: 10),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRankDivider() {
+    return Container(height: 30, width: 1, color: Colors.white12);
+  }
+
+  Widget _buildStatCard(BuildContext context, String value, String label, IconData icon, bool isDark) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withOpacity(0.04) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isDark ? Colors.white10 : Colors.grey[200]!),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.newPrimary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: AppColors.newPrimary, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: GoogleFonts.manrope(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                Text(
+                  label,
+                  style: GoogleFonts.notoKufiArabic(fontSize: 10, color: Colors.grey[500]),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAchievementsSection(BuildContext context, bool isDark) {
+    final achievements = [
+      {'icon': '🦉', 'label': 'بومة المعرفة'},
+      {'icon': '🔥', 'label': 'المثابر'},
+      {'icon': '🎧', 'label': 'المستمع الذهبي'},
+      {'icon': '📚', 'label': 'دودة كتب'},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            'الأوسمة المستحقة',
+            style: GoogleFonts.notoKufiArabic(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 100,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            itemCount: achievements.length,
+            itemBuilder: (context, index) {
+              return Container(
+                width: 85,
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: isDark ? Colors.white10 : Colors.grey[100]!),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(achievements[index]['icon']!, style: const TextStyle(fontSize: 28)),
+                    const SizedBox(height: 8),
+                    Text(
+                      achievements[index]['label']!,
+                      style: GoogleFonts.notoKufiArabic(fontSize: 10, color: Colors.grey[500]),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMenuSection(BuildContext context, AppProvider provider, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          _buildMenuItem(
+            icon: Icons.dark_mode_outlined,
+            title: 'الوضع الليلي',
+            trailing: Switch(
+              value: provider.isDarkMode,
+              onChanged: (v) => provider.toggleTheme(),
+              activeColor: AppColors.newPrimary,
+            ),
+            isDark: isDark,
+          ),
+          _buildMenuItem(
+            icon: Icons.language_rounded,
+            title: 'اللغة',
+            trailing: const Text('العربية', style: TextStyle(color: Colors.grey)),
+            isDark: isDark,
+          ),
+          _buildMenuItem(
+            icon: Icons.help_outline_rounded,
+            title: 'مركز المساعدة',
+            isDark: isDark,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuItem({required IconData icon, required String title, Widget? trailing, required bool isDark}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isDestructive ? Colors.red.withValues(alpha: 0.1) : (isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.primaryBg.withValues(alpha: 0.05)),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(
-            icon, 
-            color: isDestructive ? Colors.red : (isDark ? Colors.white : AppColors.primaryBg), 
-            size: 20
-          ),
-        ),
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(icon, color: AppColors.newPrimary),
         title: Text(
-          title, 
-          style: TextStyle(
-            fontWeight: FontWeight.w600, 
+          title,
+          style: GoogleFonts.notoKufiArabic(
             fontSize: 14,
-            color: isDestructive ? Colors.red : Theme.of(context).textTheme.bodyLarge?.color
-          )
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
         ),
-        trailing: trailing ?? (showArrow ? const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.secondaryText) : null),
-        onTap: onTap,
+        trailing: trailing ?? Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey[300]),
+      ),
+    );
+  }
+
+  Widget _buildLogoutButton(BuildContext context, AppProvider provider, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: TextButton.icon(
+        onPressed: () {
+          provider.logout();
+          Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+        },
+        icon: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
+        label: Text(
+          'تسجيل الخروج',
+          style: GoogleFonts.notoKufiArabic(color: Colors.redAccent, fontWeight: FontWeight.bold),
+        ),
+        style: TextButton.styleFrom(
+          backgroundColor: Colors.red.withOpacity(0.05),
+          minimumSize: const Size(double.infinity, 56),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
       ),
     );
   }

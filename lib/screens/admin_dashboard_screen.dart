@@ -68,10 +68,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       final dbResult = await _supabaseService.addBook({
         'title': _titleController.text,
         'author': _authorController.text,
-        'content_text': _descriptionController.text,
+        'summary': _descriptionController.text, // تم التغيير من content_text إلى summary
         'category': _categoryController.text,
-        'cover_url': coverUrl,
-        'audio_url': audioUrl,
+        'cover_image': coverUrl,                // تم التغيير من cover_url إلى cover_image
+        'audio_file': audioUrl,                 // تم التغيير من audio_url إلى audio_file
+        'is_published': true,                   // إضافة حالة النشر لضمان الظهور
         'rating': 4.5,
         'page_count': 0,
         'is_premium': false,

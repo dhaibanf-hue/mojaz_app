@@ -1,11 +1,14 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import '../models/book.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:provider/provider.dart';
-import 'home_screen.dart';
+import 'home_v2_screen.dart';
 import 'search_screen.dart';
 import 'library_screen.dart';
 import 'profile_screen.dart';
 import 'ai_assistant_screen.dart';
+import 'audio_player_screen.dart';
 import '../providers/app_provider.dart';
 import '../constants.dart';
 import 'package:flutter/services.dart';
@@ -20,82 +23,230 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
-    const HomeScreen(),
+    const HomeV2Screen(),
     const SearchScreen(),
     const LibraryScreen(),
     const ProfileScreen(),
   ];
 
   @override
+  @override
   Widget build(BuildContext context) {
     final provider = Provider.of<AppProvider>(context);
     final isDark = provider.isDarkMode;
+    // Dummy active book for mini player demo
+    final activeBook = provider.liveBooks.isNotEmpty ? provider.liveBooks.first : dummyBooks.first;
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
-        
-        // If not on the Home tab, go back to it first
         if (provider.currentMainTabIndex != 0) {
           provider.setMainTab(0);
           return;
         }
-
-        // If on the Home tab, show exit confirmation
         final shouldPop = await _showExitDialog(context);
         if (shouldPop && context.mounted) {
           SystemNavigator.pop();
         }
       },
       child: Scaffold(
-        body: PageTransitionSwitcher(
-          duration: const Duration(milliseconds: 400),
-          transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
-            return FadeThroughTransition(
-              animation: primaryAnimation,
-              secondaryAnimation: secondaryAnimation,
-              child: child,
-            );
-          },
-          child: KeyedSubtree(
-            key: ValueKey<int>(provider.currentMainTabIndex),
-            child: _screens[provider.currentMainTabIndex],
-          ),
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const AiAssistantScreen()));
-          },
-          backgroundColor: AppColors.primaryButton,
-          child: const Icon(Icons.psychology, color: Colors.white, size: 30),
-        ),
-        bottomNavigationBar: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              height: 90,
-              decoration: BoxDecoration(
-                color: isDark ? Colors.black.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.6),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-                border: Border.all(
-                  color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
-                  width: 1,
+        extendBody: true,
+        body: Stack(
+          children: [
+            // Main Content
+            AnimatedPadding(
+              duration: const Duration(milliseconds: 300),
+              padding: EdgeInsets.only(bottom: provider.showMiniPlayer ? 140 : 80), 
+              child: PageTransitionSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
+                  return FadeThroughTransition(
+                    animation: primaryAnimation,
+                    secondaryAnimation: secondaryAnimation,
+                    child: child,
+                  );
+                },
+                child: KeyedSubtree(
+                  key: ValueKey<int>(provider.currentMainTabIndex),
+                  child: _screens[provider.currentMainTabIndex],
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+            ),
+            
+            // Dynamic Footer Elements
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildNavBarItem(provider, 0, Icons.home_rounded, Icons.home_outlined, 'الرئيسية'),
-                  _buildNavBarItem(provider, 1, Icons.search_rounded, Icons.search, 'البحث'),
-                  _buildNavBarItem(provider, 2, Icons.library_books_rounded, Icons.library_books_outlined, 'مكتبتي'),
-                  _buildNavBarItem(provider, 3, Icons.person_rounded, Icons.person_outline, 'حسابي'),
+                  // Real-time Mini Player
+                  if (provider.showMiniPlayer && provider.currentPlayingBook != null)
+                    _buildMiniPlayer(context, isDark, provider),
+                  
+                  // Bottom Nav
+                  _buildCustomNavBar(context, isDark, provider),
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMiniPlayer(BuildContext context, bool isDark, AppProvider provider) {
+    final book = provider.currentPlayingBook!;
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => AudioPlayerScreen(book: book))
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isDark ? Colors.white10 : Colors.grey[200]!),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            )
+          ],
+        ),
+        child: Row(
+          children: [
+            // Book Image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: CachedNetworkImage(
+                 imageUrl: book.cover,
+                 width: 44,
+                 height: 44,
+                 fit: BoxFit.cover,
+              )
+            ),
+            const SizedBox(width: 12),
+            // Progress and Title
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    book.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: LinearProgressIndicator(
+                      value: 0.45, // Example progress
+                      minHeight: 4,
+                      backgroundColor: isDark ? Colors.white10 : Colors.grey[100],
+                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.newPrimary),
+                    ),
+                  )
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            // Controls
+            Row(
+              children: [
+                // Stop/Close Square Button
+                IconButton(
+                  icon: Icon(Icons.stop_rounded, color: isDark ? Colors.white38 : Colors.grey[400]),
+                  onPressed: () => provider.stopPlayback(),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+                const SizedBox(width: 12),
+                // Play/Pause Circle
+                GestureDetector(
+                  onTap: () => provider.togglePlayPause(),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: const BoxDecoration(
+                      color: AppColors.newPrimary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      provider.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomNavBar(BuildContext context, bool isDark, AppProvider provider) {
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 30), // Extra bottom padding for home indicator
+          decoration: BoxDecoration(
+            color: (isDark ? const Color(0xFF121212) : Colors.white).withOpacity(0.85),
+            border: Border(top: BorderSide(color: isDark ? Colors.white10 : Colors.grey[200]!)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildNavBarItem(provider, 0, Icons.home_rounded, 'الرئيسية'),
+              _buildNavBarItem(provider, 1, Icons.search_rounded, 'البحث'),
+              _buildNavBarItem(provider, 2, Icons.auto_stories_rounded, 'مكتبتي'),
+              _buildNavBarItem(provider, 3, Icons.person_outline_rounded, 'حسابي'),
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildNavBarItem(AppProvider provider, int index, IconData icon, String label) {
+    final bool isActive = provider.currentMainTabIndex == index;
+    return GestureDetector(
+      onTap: () => provider.setMainTab(index),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: isActive ? AppColors.newPrimary : Colors.grey[400],
+            size: 26,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontFamily: 'Noto Kufi Arabic',
+              fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+              color: isActive ? AppColors.newPrimary : Colors.grey[400],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -141,44 +292,5 @@ class _MainScreenState extends State<MainScreen> {
         ],
       ),
     ) ?? false;
-  }
-
-  Widget _buildNavBarItem(AppProvider provider, int index, IconData activeIcon, IconData inactiveIcon, String label) {
-    final bool isActive = provider.currentMainTabIndex == index;
-    return GestureDetector(
-      onTap: () => provider.setMainTab(index),
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 60,
-        alignment: Alignment.center,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isActive ? AppColors.primaryButton.withValues(alpha: 0.1) : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                isActive ? activeIcon : inactiveIcon,
-                color: isActive ? AppColors.primaryButton : AppColors.secondaryText,
-                size: 24,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: isActive ? AppColors.primaryButton : AppColors.secondaryText,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

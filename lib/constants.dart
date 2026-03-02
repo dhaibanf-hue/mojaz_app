@@ -17,6 +17,14 @@ class AppColors {
   static const Color success = Color(0xFF28A745);
   static const Color gold = Color(0xFFFFD700);
   static const Color aiChatBubble = Color(0xFFE3F2FD);
+
+  // New Design Colors
+  static const Color newPrimary = Color(0xFF19A30F);
+  static const Color newBackgroundLight = Color(0xFFF6F8F6);
+  static const Color newBackgroundDark = Color(0xFF122111);
+  static const Color newNeutralSoft = Color(0xFFE8EEE8);
+  static const Color newTextMain = Color(0xFF0A1F08);
+  static const Color newTextMuted = Color(0xFF4A5D48);
 }
 
 final List<Author> dummyAuthors = [

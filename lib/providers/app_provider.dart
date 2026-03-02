@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/book.dart';
 import 'dart:convert';
 import '../services/api_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AppProvider extends ChangeNotifier {
   late SharedPreferences _prefs;
@@ -14,6 +15,40 @@ class AppProvider extends ChangeNotifier {
   bool get isLoadingBooks => _isLoadingBooks;
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
+
+  // Global Playback State
+  Book? _currentPlayingBook;
+  Book? get currentPlayingBook => _currentPlayingBook;
+  bool _isPlaying = false;
+  bool get isPlaying => _isPlaying;
+  bool _showMiniPlayer = false;
+  bool get showMiniPlayer => _showMiniPlayer;
+
+  void playBook(Book book) {
+    _currentPlayingBook = book;
+    _isPlaying = true;
+    _showMiniPlayer = true;
+    notifyListeners();
+  }
+
+  void togglePlayPause() {
+    _isPlaying = !_isPlaying;
+    notifyListeners();
+  }
+
+  void stopPlayback() {
+    _isPlaying = false;
+    _showMiniPlayer = false;
+    // Keep _currentPlayingBook so we can resume if needed, 
+    // but the UI (MiniPlayer) will disappear.
+    notifyListeners();
+  }
+
+  void hideMiniPlayer() {
+    _showMiniPlayer = false;
+    _isPlaying = false;
+    notifyListeners();
+  }
 
   // AI Reading State
   bool _isAiLoading = false;
@@ -65,6 +100,9 @@ class AppProvider extends ChangeNotifier {
     // Load designs
     _isModernDesign = _prefs.getBool('isModernDesign') ?? true;
     
+    // Load last tab
+    _currentMainTabIndex = _prefs.getInt('lastMainTab') ?? 0;
+
     fetchBooks(silent: true); // Silently load in background
     notifyListeners();
   }
@@ -160,14 +198,43 @@ class AppProvider extends ChangeNotifier {
   List<Book> get playlist => _playlist;
   List<String> get favoriteBookIds => _favoriteBookIds;
 
-  void toggleFavorite(String bookId) {
-    if (_favoriteBookIds.contains(bookId)) {
-      _favoriteBookIds.remove(bookId);
+  List<String> get completedBookIds => _audioProgress.entries
+      .where((entry) => entry.value >= 850)
+      .map((entry) => entry.key)
+      .toList();
+
+  /// Total listening time in minutes (sum of all progress entries divided by 60)
+  int get totalListeningMinutes {
+    final totalSeconds = _audioProgress.values.fold<int>(0, (sum, secs) => sum + secs);
+    return (totalSeconds / 60).ceil();
+  }
+
+  bool isFavorite(String bookId) => _favoriteBookIds.contains(bookId);
+
+  void toggleFavorite(Book book) async {
+    final client = Supabase.instance.client;
+    final userId = client.auth.currentUser?.id;
+
+    if (_favoriteBookIds.contains(book.id)) {
+      _favoriteBookIds.remove(book.id);
+      if (userId != null) {
+        await client.from('favorites').delete().eq('user_id', userId).eq('book_id', book.id);
+      }
     } else {
-      _favoriteBookIds.add(bookId);
+      _favoriteBookIds.add(book.id);
+      if (userId != null) {
+        await client.from('favorites').upsert({'user_id': userId, 'book_id': book.id});
+      }
     }
     _prefs.setStringList('favorites', _favoriteBookIds);
     notifyListeners();
+  }
+
+  void markAsDownloaded(String bookId) {
+    if (!_downloadedBookIds.contains(bookId)) {
+      _downloadedBookIds.add(bookId);
+      notifyListeners();
+    }
   }
 
   void toggleDownload(String bookId) {
@@ -194,6 +261,29 @@ class AppProvider extends ChangeNotifier {
   void saveBookProgress(String bookId, int seconds) {
     _audioProgress[bookId] = seconds;
     _prefs.setString('audioProgress', json.encode(_audioProgress));
+    
+    // Cloud Sync
+    _apiService.syncProgress(bookId, seconds);
+    
+    // Logic for awarding points (e.g., if completed)
+    if (seconds >= 850) { // Assuming book is ~15 min
+       updatePoints(10); // Award 10 points for completion
+    }
+  }
+
+  void updatePoints(int extraPoints) async {
+    final client = Supabase.instance.client;
+    final userId = client.auth.currentUser?.id;
+    
+    // Update locally first
+    // In a real app, points would be in a profile state
+    if (userId != null) {
+      try {
+        await client.rpc('increment_points', params: {'user_id': userId, 'amount': extraPoints});
+      } catch (e) {
+        debugPrint("Point sync error: $e");
+      }
+    }
   }
 
   // 6. Navigation Management
@@ -202,6 +292,7 @@ class AppProvider extends ChangeNotifier {
 
   void setMainTab(int index) {
     _currentMainTabIndex = index;
+    _prefs.setInt('lastMainTab', index);
     notifyListeners();
   }
 

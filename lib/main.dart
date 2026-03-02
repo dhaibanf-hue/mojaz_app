@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'screens/splash_screen.dart';
+import 'screens/welcome_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/main_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'providers/app_provider.dart';
 import 'theme.dart';
 
@@ -44,7 +47,12 @@ class MyApp extends StatelessWidget {
           child: child!,
         );
       },
-      home: const SplashScreen(),
+      home: const WelcomeScreen(),
+      routes: {
+        '/login': (context) => const LoginScreen(),
+        '/onboarding': (context) => const OnboardingScreen(),
+        '/main': (context) => const MainScreen(),
+      },
     );
   }
 }

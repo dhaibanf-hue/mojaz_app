@@ -1,9 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../constants.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/book.dart';
 import '../providers/app_provider.dart';
+import '../constants.dart';
 import 'book_detail_screen.dart';
+import 'all_categories_screen.dart';
+import 'category_books_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   final String? initialQuery;
@@ -16,23 +21,38 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<Book> _searchResults = [];
-
+  bool _isSearching = false;
+  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
     if (widget.initialQuery != null) {
       _searchController.text = widget.initialQuery!;
+      _isSearching = true;
       _performSearch(widget.initialQuery!);
     }
   }
 
-  double _minRating = 0;
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      _performSearch(query);
+    });
+  }
 
   void _performSearch(String query) {
     if (query.isEmpty) {
       setState(() {
         _searchResults = [];
+        _isSearching = false;
       });
       return;
     }
@@ -41,237 +61,469 @@ class _SearchScreenState extends State<SearchScreen> {
     final allBooks = provider.liveBooks.isNotEmpty ? provider.liveBooks : dummyBooks;
 
     setState(() {
+      _isSearching = true;
       _searchResults = allBooks.where((book) {
-        final queryLower = query.toLowerCase();
-        final matchesQuery = book.title.toLowerCase().contains(queryLower) ||
-               book.author.toLowerCase().contains(queryLower) ||
-               book.category.toLowerCase().contains(queryLower);
-        final matchesRating = book.rating >= _minRating;
-        return matchesQuery && matchesRating;
+        final q = query.toLowerCase();
+        return book.title.toLowerCase().contains(q) ||
+               book.author.toLowerCase().contains(q) ||
+               book.category.toLowerCase().contains(q);
       }).toList();
+    });
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _searchResults = [];
+      _isSearching = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<AppProvider>(context);
-    final isDark = provider.isDarkMode;
-
+    bool isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: _buildSearchField(context, isDark),
-        actions: [
-          if (_searchController.text.isNotEmpty)
-            TextButton(
-              onPressed: () {
-                _searchController.clear();
-                _performSearch('');
-              },
-              child: const Text('إلغاء', style: TextStyle(color: AppColors.primaryButton)),
+      backgroundColor: isDark ? AppColors.newBackgroundDark : Colors.white,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // Header & Search
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'استكشف',
+                        style: GoogleFonts.notoKufiArabic(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.notifications_none_rounded, color: isDark ? Colors.white70 : Colors.black54),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Search Input
+                  Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E293B) : Colors.grey[100],
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: isDark ? Colors.white10 : Colors.transparent),
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: _onSearchChanged,
+                      textAlign: TextAlign.right,
+                      decoration: InputDecoration(
+                        hintText: 'ابحث عن كتاب، مؤلف أو موضوع',
+                        hintStyle: GoogleFonts.notoKufiArabic(
+                          fontSize: 14,
+                          color: isDark ? Colors.grey[400] : Colors.grey[500],
+                        ),
+                        prefixIcon: _isSearching 
+                          ? IconButton(
+                              icon: const Icon(Icons.close_rounded, size: 20),
+                              onPressed: _clearSearch,
+                              color: Colors.grey,
+                            )
+                          : null,
+                        suffixIcon: Icon(Icons.search, color: isDark ? AppColors.newPrimary : Colors.grey[400]),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      ),
+                      style: GoogleFonts.notoKufiArabic(
+                        fontSize: 14,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: _searchController.text.isEmpty ? _buildDiscoveryView(context, isDark) : _buildResultsView(context),
-    );
-  }
 
-  Widget _buildSearchField(BuildContext context, bool isDark) {
-    return Container(
-      height: 45,
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: TextField(
-        controller: _searchController,
-        autofocus: false,
-        onChanged: _performSearch,
-        decoration: InputDecoration(
-          hintText: 'ابحث عن الكتب، المؤلفين أو التصنيفات...',
-          hintStyle: TextStyle(color: AppColors.secondaryText, fontSize: 13),
-          prefixIcon: const Icon(Icons.search, color: AppColors.secondaryText, size: 20),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+            // Content
+            Expanded(
+              child: _isSearching
+                  ? _buildSearchResults(context, isDark)
+                  : _buildDiscoveryView(context, isDark),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildDiscoveryView(BuildContext context, bool isDark) {
-    return Column(
-      children: [
-        _buildFilterBar(),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.all(24),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 120),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Categories Grid
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'التصنيفات',
+                  style: GoogleFonts.notoKufiArabic(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AllCategoriesScreen()));
+                  },
+                  child: Text(
+                    'عرض الكل',
+                    style: GoogleFonts.notoKufiArabic(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.newPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            childAspectRatio: 2.2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
             children: [
-              _buildSectionHeader('اكتشف تصنيفات تهمك'),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  _buildCategoryChip('تطوير ذات', Icons.psychology_outlined),
-                  _buildCategoryChip('إدارة أعمال', Icons.business_center_outlined),
-                  _buildCategoryChip('علم نفس', Icons.favorite_border_rounded),
-                  _buildCategoryChip('تاريخ', Icons.history_edu_rounded),
-                  _buildCategoryChip('تكنولوجيا', Icons.biotech_outlined),
-                  _buildCategoryChip('روايات', Icons.auto_stories_outlined),
-                ],
-              ),
-              const SizedBox(height: 40),
-              _buildSectionHeader('عمليات البحث الشائعة'),
-              const SizedBox(height: 16),
-              _buildTrendingItem('الذكاء العاطفي'),
-              _buildTrendingItem('ريادة الأعمال في العصر الرقمي'),
-              _buildTrendingItem('فن اللامبالاة'),
-              _buildTrendingItem('قوة العادات'),
+              _buildCategoryBtn(context, 'علم النفس', Icons.psychology, isDark),
+              _buildCategoryBtn(context, 'ريادة الأعمال', Icons.rocket_launch, isDark),
+              _buildCategoryBtn(context, 'الفلسفة', Icons.groups, isDark),
+              _buildCategoryBtn(context, 'الإنتاجية', Icons.hourglass_empty, isDark),
             ],
           ),
-        ),
-      ],
-    );
-  }
 
-  Widget _buildFilterBar() {
-    return Container(
-      height: 50,
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        children: [
-          FilterChip(
-            label: const Text('الكل', style: TextStyle(fontSize: 12)),
-            selected: _minRating == 0,
-            onSelected: (v) => setState(() {
-               _minRating = 0;
-               if (_searchController.text.isNotEmpty) _performSearch(_searchController.text);
-            }),
-            selectedColor: AppColors.primaryButton.withValues(alpha: 0.2),
-            checkmarkColor: AppColors.primaryButton,
+          const SizedBox(height: 32),
+
+          // Trending Now
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              'شائع الآن',
+              style: GoogleFonts.notoKufiArabic(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
           ),
-          const SizedBox(width: 8),
-          FilterChip(
-            label: const Text('4.5+ ⭐', style: TextStyle(fontSize: 12)),
-            selected: _minRating == 4.5,
-            onSelected: (v) => setState(() {
-               _minRating = v ? 4.5 : 0;
-               if (_searchController.text.isNotEmpty) _performSearch(_searchController.text);
-            }),
-            selectedColor: AppColors.primaryButton.withValues(alpha: 0.2),
-            checkmarkColor: AppColors.primaryButton,
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 260,
+            child: Consumer<AppProvider>(
+              builder: (context, provider, child) {
+                final books = provider.liveBooks.isNotEmpty ? provider.liveBooks.take(5).toList() : dummyBooks.take(3).toList();
+                return ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: books.length,
+                  itemBuilder: (context, index) => _buildTrendingBook(context, books[index], isDark),
+                );
+              },
+            ),
           ),
-          const SizedBox(width: 8),
-          FilterChip(
-            label: const Text('4.8+ ⭐', style: TextStyle(fontSize: 12)),
-            selected: _minRating == 4.8,
-            onSelected: (v) => setState(() {
-               _minRating = v ? 4.8 : 0;
-               if (_searchController.text.isNotEmpty) _performSearch(_searchController.text);
-            }),
-            selectedColor: AppColors.primaryButton.withValues(alpha: 0.2),
-            checkmarkColor: AppColors.primaryButton,
+
+          const SizedBox(height: 32),
+
+          // New Summaries
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'أحدث الملخصات',
+                  style: GoogleFonts.notoKufiArabic(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+                Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey[400]),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Consumer<AppProvider>(
+            builder: (context, provider, child) {
+              final books = provider.liveBooks.isNotEmpty ? provider.liveBooks.reversed.take(4).toList() : dummyBooks;
+              return ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: books.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) => _buildNewBookItem(context, books[index], isDark),
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+  Widget _buildSearchResults(BuildContext context, bool isDark) {
+    if (_searchResults.isEmpty) {
+       return Center(
+         child: Column(
+           mainAxisAlignment: MainAxisAlignment.center,
+           children: [
+             Icon(Icons.search_off_rounded, size: 64, color: Colors.grey[300]),
+             const SizedBox(height: 16),
+             Text(
+               'لا توجد نتائج لبحثك',
+               style: GoogleFonts.notoKufiArabic(fontSize: 16, color: Colors.grey),
+             ),
+             const SizedBox(height: 24),
+             Text(
+               'جرب البحث عن أحد هذه التصنيفات:',
+               style: GoogleFonts.notoKufiArabic(fontSize: 12, color: Colors.grey[500]),
+             ),
+             const SizedBox(height: 16),
+             Wrap(
+               spacing: 8,
+               children: [
+                 _buildSmallCategoryChip('تاريخ', isDark),
+                 _buildSmallCategoryChip('فلسفة', isDark),
+                 _buildSmallCategoryChip('ذكاء اصطناعي', isDark),
+               ],
+             )
+           ],
+         ),
+       );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.all(20),
+      itemCount: _searchResults.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 16),
+      itemBuilder: (context, index) {
+        return _buildNewBookItem(context, _searchResults[index], isDark);
+      },
     );
   }
 
-  Widget _buildCategoryChip(String label, IconData icon) {
+  Widget _buildSmallCategoryChip(String label, bool isDark) {
     return ActionChip(
+      label: Text(label, style: const TextStyle(fontSize: 12)),
       onPressed: () {
         _searchController.text = label;
         _performSearch(label);
       },
-      avatar: Icon(icon, size: 16, color: AppColors.primaryButton),
-      label: Text(label),
-      backgroundColor: Theme.of(context).cardColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(color: AppColors.secondaryText.withValues(alpha: 0.1)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      backgroundColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
     );
   }
 
-  Widget _buildTrendingItem(String text) {
-    return ListTile(
-      leading: const Icon(Icons.trending_up, color: AppColors.secondaryText, size: 20),
-      title: Text(text, style: const TextStyle(fontSize: 14)),
-      trailing: const Icon(Icons.arrow_outward_rounded, size: 14, color: AppColors.secondaryText),
-      contentPadding: EdgeInsets.zero,
+  Widget _buildCategoryBtn(BuildContext context, String title, IconData icon, bool isDark) {
+    return InkWell(
       onTap: () {
-        _searchController.text = text;
-        _performSearch(text);
+        final provider = Provider.of<AppProvider>(context, listen: false);
+        final allBooks = provider.liveBooks.isNotEmpty ? provider.liveBooks : dummyBooks;
+        final filtered = allBooks.where((b) => b.category.contains(title) || title.contains(b.category)).toList();
+        Navigator.push(context, MaterialPageRoute(builder: (_) => CategoryBooksScreen(categoryName: title, books: filtered.isEmpty ? allBooks : filtered)));
       },
-    );
-  }
-
-  Widget _buildResultsView(BuildContext context) {
-    if (_searchResults.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : Colors.grey[50],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: isDark ? Colors.white10 : Colors.grey[200]!),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(Icons.search_off_rounded, size: 80, color: AppColors.secondaryText.withValues(alpha: 0.2)),
-            const SizedBox(height: 16),
-            const Text('لم نجد نتائج مطابقة لبحثك', style: TextStyle(color: AppColors.secondaryText)),
+            Icon(icon, color: AppColors.newPrimary, size: 22),
+            Text(
+              title,
+              style: GoogleFonts.notoKufiArabic(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
           ],
         ),
-      );
-    }
+      ),
+    );
+  }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(24),
-      itemCount: _searchResults.length,
-      itemBuilder: (context, index) {
-        final book = _searchResults[index];
-        return ListTile(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => BookDetailScreen(book: book, heroTag: 'search-${book.id}')),
-            );
-          },
-          leading: Hero(
-            tag: 'search-${book.id}',
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(book.cover, width: 50, height: 70, fit: BoxFit.cover),
-            ),
-          ),
-          title: Text(book.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(book.author, style: const TextStyle(fontSize: 12, color: AppColors.secondaryText)),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryButton.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(book.category, style: const TextStyle(color: AppColors.primaryButton, fontSize: 10, fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-          isThreeLine: true,
-        );
+  Widget _buildTrendingBook(BuildContext context, Book book, bool isDark) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailScreen(book: book)));
       },
+      child: Container(
+        width: 140,
+        margin: const EdgeInsets.only(left: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: CachedNetworkImage(
+                    imageUrl: book.cover,
+                    height: 180,
+                    width: 140,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(color: Colors.grey[200]),
+                  ),
+                ),
+                Positioned(
+                  bottom: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.headset_rounded, color: Colors.white, size: 12),
+                        const SizedBox(width: 4),
+                        const Text('18 د', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                )
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              book.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.notoKufiArabic(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                height: 1.3,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              book.author,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.notoKufiArabic(
+                fontSize: 11,
+                color: Colors.grey[500],
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              book.category,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.notoKufiArabic(
+                fontSize: 10,
+                color: AppColors.newPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNewBookItem(BuildContext context, Book book, bool isDark) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailScreen(book: book)));
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withOpacity(0.04) : Colors.grey[50],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: isDark ? Colors.white10 : Colors.grey[100]!),
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: CachedNetworkImage(
+                imageUrl: book.cover,
+                width: 54,
+                height: 76,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    book.title,
+                    style: GoogleFonts.notoKufiArabic(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    book.author,
+                    style: GoogleFonts.notoKufiArabic(
+                      fontSize: 11,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.schedule, size: 14, color: AppColors.newPrimary.withOpacity(0.6)),
+                      const SizedBox(width: 4),
+                      Text('15 دقيقة', style: GoogleFonts.manrope(fontSize: 10, color: Colors.grey[400], fontWeight: FontWeight.bold)),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.newPrimary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(book.category, style: GoogleFonts.manrope(color: AppColors.newPrimary, fontSize: 10, fontWeight: FontWeight.w900)),
+                      ),
+                    ],
+                  )
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -4,14 +4,15 @@ import 'constants.dart';
 
 // Global Theme Data for professional look
 ThemeData getLightThemeProvider(bool isModern) {
-  final primaryColor = isModern ? AppColors.primaryButton : const Color(0xFF2196F3);
-  final scaffoldColor = isModern ? const Color(0xFFFBFBFD) : Colors.white;
-  final appBarColor = isModern ? AppColors.primaryBg : const Color(0xFF1976D2);
+  // Use newPrimary (Green) for modern design, else Blue
+  final primaryColor = isModern ? AppColors.newPrimary : const Color(0xFF2196F3);
+  final scaffoldColor = isModern ? AppColors.newBackgroundLight : Colors.white;
+  final appBarColor = isModern ? AppColors.newPrimary : const Color(0xFF1976D2);
 
   return ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
-    textTheme: GoogleFonts.outfitTextTheme(),
+    textTheme: GoogleFonts.manropeTextTheme(), // Switch to Manrope for modern feel
     primaryColor: primaryColor,
     scaffoldBackgroundColor: scaffoldColor,
     appBarTheme: AppBarTheme(
@@ -25,7 +26,7 @@ ThemeData getLightThemeProvider(bool isModern) {
       seedColor: primaryColor,
       primary: primaryColor,
       secondary: isModern ? AppColors.primaryBg : const Color(0xFF1E88E5),
-      surface: Colors.white,
+      surface: isModern ? Colors.white : Colors.white,
       onSurface: isModern ? AppColors.primaryBg : Colors.black87,
     ),
     cardTheme: CardTheme(
@@ -35,7 +36,7 @@ ThemeData getLightThemeProvider(bool isModern) {
     ),
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: {
-        TargetPlatform.android: ZoomPageTransitionsBuilder(),
+        TargetPlatform.android: CupertinoPageTransitionsBuilder(), // Smoother slide transition
         TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
       },
     ),
@@ -43,13 +44,13 @@ ThemeData getLightThemeProvider(bool isModern) {
 }
 
 ThemeData getDarkThemeProvider(bool isModern) {
-  final primaryColor = isModern ? AppColors.primaryButton : const Color(0xFF64B5F6);
-  final scaffoldColor = isModern ? AppColors.darkBg : const Color(0xFF121212);
+  final primaryColor = isModern ? AppColors.newPrimary : const Color(0xFF64B5F6);
+  final scaffoldColor = isModern ? AppColors.newBackgroundDark : const Color(0xFF121212);
 
   return ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
-    textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
+    textTheme: GoogleFonts.manropeTextTheme(ThemeData.dark().textTheme),
     primaryColor: primaryColor,
     scaffoldBackgroundColor: scaffoldColor,
     appBarTheme: const AppBarTheme(
@@ -74,7 +75,7 @@ ThemeData getDarkThemeProvider(bool isModern) {
     ),
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: {
-        TargetPlatform.android: ZoomPageTransitionsBuilder(),
+        TargetPlatform.android: CupertinoPageTransitionsBuilder(), // Consistent smooth slide
         TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
       },
     ),
