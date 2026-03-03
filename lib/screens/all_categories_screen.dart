@@ -67,7 +67,7 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
                          width: 40,
                          height: 40,
                          decoration: BoxDecoration(
-                           color: AppColors.newPrimary.withOpacity(0.1),
+                           color: AppColors.newPrimary.withValues(alpha: 0.1),
                            shape: BoxShape.circle,
                          ),
                          child: IconButton(
@@ -82,10 +82,10 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
                    Container(
                      height: 48,
                      decoration: BoxDecoration(
-                       color: isDark ? const Color(0xFF1E293B).withOpacity(0.5) : Colors.white,
+                       color: isDark ? const Color(0xFF1E293B).withValues(alpha: 0.5) : Colors.white,
                        borderRadius: BorderRadius.circular(12),
                        boxShadow: [
-                         if (!isDark) BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
+                         if (!isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))
                        ],
                      ),
                      child: TextField(
@@ -95,12 +95,12 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
                        decoration: InputDecoration(
                          hintText: 'ابحث عن تصنيف...',
                          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
-                         prefixIcon: Icon(Icons.search, color: AppColors.newPrimary.withOpacity(0.6)), // Left icon for RTL inputs is prefix? No, usually suffix if RTL. But Design has specific icon placement.
+                         prefixIcon: Icon(Icons.search, color: AppColors.newPrimary.withValues(alpha: 0.6)), // Left icon for RTL inputs is prefix? No, usually suffix if RTL. But Design has specific icon placement.
                          // Design: Magnifying glass on RIGHT. Input text starts left of it?
                          // "absolute inset-y-0 right-0" in Tailwind means icon is on RIGHT.
                          // So we use suffixIcon for standard Flutter RTL or prefixIcon if LTR.
                          // Let's use suffixIcon for RTL search.
-                         suffixIcon: Icon(Icons.search, color: AppColors.newPrimary.withOpacity(0.6)),
+                         suffixIcon: Icon(Icons.search, color: AppColors.newPrimary.withValues(alpha: 0.6)),
                          border: InputBorder.none,
                          contentPadding: const EdgeInsets.symmetric(vertical: 14),
                        ),
@@ -133,13 +133,13 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
                child: Container(
                  padding: const EdgeInsets.all(20),
                  decoration: BoxDecoration(
-                   color: AppColors.newPrimary.withOpacity(isDark ? 0.1 : 0.05),
+                   color: AppColors.newPrimary.withValues(alpha: isDark ? 0.1 : 0.05),
                    borderRadius: BorderRadius.circular(16),
-                   border: Border.all(color: AppColors.newPrimary.withOpacity(0.2)),
+                   border: Border.all(color: AppColors.newPrimary.withValues(alpha: 0.2)),
                  ),
                  child: Row(
                    children: [
-                     Icon(Icons.auto_stories, size: 48, color: AppColors.newPrimary.withOpacity(0.8)),
+                     Icon(Icons.auto_stories, size: 48, color: AppColors.newPrimary.withValues(alpha: 0.8)),
                      const SizedBox(width: 16),
                      Expanded(
                        child: Column(
@@ -171,7 +171,7 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
                                  borderRadius: BorderRadius.circular(8),
                                  boxShadow: [
                                    BoxShadow(
-                                     color: AppColors.newPrimary.withOpacity(0.3),
+                                     color: AppColors.newPrimary.withValues(alpha: 0.3),
                                      blurRadius: 8,
                                      offset: const Offset(0, 4),
                                    )
@@ -240,7 +240,7 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
           border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[100]!),
           boxShadow: [
              if (!isDark) BoxShadow(
-               color: Colors.black.withOpacity(0.03),
+               color: Colors.black.withValues(alpha: 0.03),
                blurRadius: 10,
                offset: const Offset(0, 4),
              )
@@ -256,7 +256,7 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.newPrimary.withOpacity(0.1),
+                  color: AppColors.newPrimary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(cat.icon, color: AppColors.newPrimary, size: 24),

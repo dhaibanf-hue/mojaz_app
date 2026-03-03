@@ -77,7 +77,7 @@ class ProfileScreen extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 35,
-            backgroundColor: AppColors.newPrimary.withOpacity(0.1),
+            backgroundColor: AppColors.newPrimary.withValues(alpha: 0.1),
             backgroundImage: const NetworkImage('https://picsum.photos/seed/user/200/200'),
           ),
           const SizedBox(width: 16),
@@ -127,7 +127,7 @@ class ProfileScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.newPrimary.withOpacity(0.2),
+            color: AppColors.newPrimary.withValues(alpha: 0.2),
             blurRadius: 20,
             offset: const Offset(0, 10),
           )
@@ -158,7 +158,7 @@ class ProfileScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.emoji_events_rounded, color: Colors.amber, size: 30),
@@ -169,7 +169,7 @@ class ProfileScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildRankStat('${provider.points.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}', 'نقطة إنجاز', Icons.auto_awesome_rounded),
+              _buildRankStat(provider.points.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},'), 'نقطة إنجاز', Icons.auto_awesome_rounded),
               _buildRankDivider(),
               _buildRankStat('${provider.streak}', 'أيام استمرار', Icons.local_fire_department_rounded),
             ],
@@ -213,7 +213,7 @@ class ProfileScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withOpacity(0.04) : Colors.white,
+          color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: isDark ? Colors.white10 : Colors.grey[200]!),
         ),
@@ -222,7 +222,7 @@ class ProfileScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.newPrimary.withOpacity(0.1),
+                color: AppColors.newPrimary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: AppColors.newPrimary, size: 20),
@@ -285,7 +285,7 @@ class ProfileScreen extends StatelessWidget {
                 width: 85,
                 margin: const EdgeInsets.only(right: 12),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
+                  color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey[50],
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: isDark ? Colors.white10 : Colors.grey[100]!),
                 ),
@@ -344,7 +344,7 @@ class ProfileScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
         borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
@@ -377,7 +377,7 @@ class ProfileScreen extends StatelessWidget {
           style: GoogleFonts.notoKufiArabic(color: Colors.redAccent, fontWeight: FontWeight.bold),
         ),
         style: TextButton.styleFrom(
-          backgroundColor: Colors.red.withOpacity(0.05),
+          backgroundColor: Colors.red.withValues(alpha: 0.05),
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),

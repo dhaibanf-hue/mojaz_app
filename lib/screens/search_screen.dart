@@ -108,7 +108,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
+                          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey[100],
                           shape: BoxShape.circle,
                         ),
                         child: Icon(Icons.notifications_none_rounded, color: isDark ? Colors.white70 : Colors.black54),
@@ -335,7 +335,7 @@ class _SearchScreenState extends State<SearchScreen> {
         _searchController.text = label;
         _performSearch(label);
       },
-      backgroundColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
+      backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey[100],
     );
   }
 
@@ -402,7 +402,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
+                      color: Colors.black.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -465,7 +465,7 @@ class _SearchScreenState extends State<SearchScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withOpacity(0.04) : Colors.grey[50],
+          color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.grey[50],
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: isDark ? Colors.white10 : Colors.grey[100]!),
         ),
@@ -504,14 +504,14 @@ class _SearchScreenState extends State<SearchScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.schedule, size: 14, color: AppColors.newPrimary.withOpacity(0.6)),
+                      Icon(Icons.schedule, size: 14, color: AppColors.newPrimary.withValues(alpha: 0.6)),
                       const SizedBox(width: 4),
                       Text('15 دقيقة', style: GoogleFonts.manrope(fontSize: 10, color: Colors.grey[400], fontWeight: FontWeight.bold)),
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: AppColors.newPrimary.withOpacity(0.1),
+                          color: AppColors.newPrimary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(book.category, style: GoogleFonts.manrope(color: AppColors.newPrimary, fontSize: 10, fontWeight: FontWeight.w900)),

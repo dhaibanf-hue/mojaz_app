@@ -200,7 +200,7 @@ class _InterestFlowScreenState extends State<InterestFlowScreen>
             // ===== الزر السفلي الثابت =====
             Container(
               decoration: BoxDecoration(
-                color: bg.withOpacity(0.95),
+                color: bg.withValues(alpha: 0.95),
                 border: Border(top: BorderSide(color: isDark ? const Color(0xFF27272A) : Colors.grey[100]!)),
               ),
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
@@ -215,7 +215,7 @@ class _InterestFlowScreenState extends State<InterestFlowScreen>
                       backgroundColor: AppColors.newPrimary,
                       foregroundColor: Colors.white,
                       elevation: 6,
-                      shadowColor: AppColors.newPrimary.withOpacity(0.3),
+                      shadowColor: AppColors.newPrimary.withValues(alpha: 0.3),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -283,7 +283,7 @@ class _InterestFlowScreenState extends State<InterestFlowScreen>
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? AppColors.newPrimary.withOpacity(isDark ? 0.2 : 0.05)
+                      ? AppColors.newPrimary.withValues(alpha: isDark ? 0.2 : 0.05)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
@@ -293,7 +293,7 @@ class _InterestFlowScreenState extends State<InterestFlowScreen>
                     width: isSelected ? 2 : 1.5,
                   ),
                   boxShadow: isSelected
-                      ? [BoxShadow(color: AppColors.newPrimary.withOpacity(0.15), blurRadius: 8, offset: const Offset(0, 4))]
+                      ? [BoxShadow(color: AppColors.newPrimary.withValues(alpha: 0.15), blurRadius: 8, offset: const Offset(0, 4))]
                       : [],
                 ),
                 child: Row(
@@ -320,7 +320,7 @@ class _InterestFlowScreenState extends State<InterestFlowScreen>
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? AppColors.newPrimary.withOpacity(0.15)
+                            ? AppColors.newPrimary.withValues(alpha: 0.15)
                             : (isDark ? const Color(0xFF27272A) : Colors.grey[100]),
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -430,7 +430,7 @@ class _InterestFlowScreenState extends State<InterestFlowScreen>
                     width: 2,
                   ),
                   boxShadow: isSelected
-                      ? [BoxShadow(color: AppColors.newPrimary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))]
+                      ? [BoxShadow(color: AppColors.newPrimary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))]
                       : [],
                 ),
                 child: Column(
@@ -547,7 +547,7 @@ class _InterestFlowScreenState extends State<InterestFlowScreen>
             width: isSelected ? 3 : 1.5,
           ),
           boxShadow: isSelected
-              ? [BoxShadow(color: AppColors.newPrimary.withOpacity(0.15), blurRadius: 10, offset: const Offset(0, 4))]
+              ? [BoxShadow(color: AppColors.newPrimary.withValues(alpha: 0.15), blurRadius: 10, offset: const Offset(0, 4))]
               : [],
         ),
         child: Column(
@@ -555,7 +555,7 @@ class _InterestFlowScreenState extends State<InterestFlowScreen>
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.newPrimary.withOpacity(0.1) : (isDark ? const Color(0xFF27272A) : Colors.grey[50]),
+                color: isSelected ? AppColors.newPrimary.withValues(alpha: 0.1) : (isDark ? const Color(0xFF27272A) : Colors.grey[50]),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, size: 32, color: isSelected ? AppColors.newPrimary : Colors.grey[400]),
@@ -628,7 +628,7 @@ class _InterestFlowScreenState extends State<InterestFlowScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
-              color: AppColors.newPrimary.withOpacity(0.1),
+              color: AppColors.newPrimary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -670,7 +670,7 @@ class _InterestFlowScreenState extends State<InterestFlowScreen>
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.newPrimary.withOpacity(isDark ? 0.2 : 0.05)
+              ? AppColors.newPrimary.withValues(alpha: isDark ? 0.2 : 0.05)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
@@ -716,7 +716,7 @@ class _InterestFlowScreenState extends State<InterestFlowScreen>
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppColors.newPrimary.withOpacity(0.15),
+                            color: AppColors.newPrimary.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -836,7 +836,7 @@ class _LoadingPlanScreenState extends State<LoadingPlanScreen>
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    AppColors.newPrimary.withOpacity(0.05),
+                    AppColors.newPrimary.withValues(alpha: 0.05),
                     Colors.transparent,
                   ],
                 ),
@@ -858,12 +858,12 @@ class _LoadingPlanScreenState extends State<LoadingPlanScreen>
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.newPrimary.withOpacity(0.2),
+                        color: AppColors.newPrimary.withValues(alpha: 0.2),
                         blurRadius: 20,
                         spreadRadius: 5,
                       ),
                     ],
-                    border: Border.all(color: AppColors.newPrimary.withOpacity(0.2)),
+                    border: Border.all(color: AppColors.newPrimary.withValues(alpha: 0.2)),
                   ),
                   child: Stack(
                     alignment: Alignment.center,
@@ -875,7 +875,7 @@ class _LoadingPlanScreenState extends State<LoadingPlanScreen>
                         child: RotationTransition(
                           turns: _spinController,
                           child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.newPrimary.withOpacity(0.4)),
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.newPrimary.withValues(alpha: 0.4)),
                             strokeWidth: 2,
                           ),
                         ),
@@ -912,7 +912,7 @@ class _LoadingPlanScreenState extends State<LoadingPlanScreen>
             right: 24,
             child: Column(
               children: [
-                Icon(Icons.format_quote, color: AppColors.newPrimary.withOpacity(0.5), size: 30),
+                Icon(Icons.format_quote, color: AppColors.newPrimary.withValues(alpha: 0.5), size: 30),
                 const SizedBox(height: 8),
                 Text(
                   '"المعرفة هي القوة، ونحن نجهز لك أقصر الطرق إليها"',
@@ -942,7 +942,7 @@ class _LoadingPlanScreenState extends State<LoadingPlanScreen>
         : Colors.transparent;
     Color borderColor = state == 2
         ? AppColors.newPrimary
-        : (state == 1 ? AppColors.newPrimary.withOpacity(0.5) : Colors.grey[400]!);
+        : (state == 1 ? AppColors.newPrimary.withValues(alpha: 0.5) : Colors.grey[400]!);
     Color textColor = state == 2
         ? (isDark ? Colors.white : Colors.black87)
         : (state == 1

@@ -124,14 +124,14 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.touch_app_rounded, size: 48, color: primary.withOpacity(0.5)),
+                        Icon(Icons.touch_app_rounded, size: 48, color: primary.withValues(alpha: 0.5)),
                         const SizedBox(height: 16),
                         Text(
                           'اضغط في أي مكان',
                           style: GoogleFonts.notoKufiArabic(
                             fontSize: 20,
                             fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white70 : AppColors.newTextMain.withOpacity(0.6),
+                            color: isDark ? Colors.white70 : AppColors.newTextMain.withValues(alpha: 0.6),
                           ),
                         ),
                       ],
@@ -157,7 +157,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           decoration: BoxDecoration(
                             color: primary,
                             shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: primary.withOpacity(0.5), blurRadius: 16)],
+                            boxShadow: [BoxShadow(color: primary.withValues(alpha: 0.5), blurRadius: 16)],
                           ),
                         ),
                       ),

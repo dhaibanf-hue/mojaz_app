@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
@@ -249,35 +248,35 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    border: Border(bottom: BorderSide(color: Colors.grey.withOpacity(0.1))),
+                    border: Border(bottom: BorderSide(color: Colors.grey.withValues(alpha: 0.1))),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
-                         icon: Icon(Icons.expand_more_rounded, color: _themeTextColor.withOpacity(0.7)),
+                         icon: Icon(Icons.expand_more_rounded, color: _themeTextColor.withValues(alpha: 0.7)),
                          onPressed: () => Navigator.pop(context),
                       ),
                       Row(
                         children: [
                           IconButton(
                             icon: Icon(isFav ? Icons.star_rounded : Icons.star_outline_rounded, 
-                                      color: isFav ? AppColors.gold : _themeTextColor.withOpacity(0.7)),
+                                      color: isFav ? AppColors.gold : _themeTextColor.withValues(alpha: 0.7)),
                             onPressed: _toggleFavorite,
                           ),
                           IconButton(
-                            icon: Icon(Icons.text_fields_rounded, color: _themeTextColor.withOpacity(0.7)),
+                            icon: Icon(Icons.text_fields_rounded, color: _themeTextColor.withValues(alpha: 0.7)),
                             onPressed: _showSettings,
                           ),
                           IconButton(
-                            icon: Icon(Icons.format_list_bulleted_rounded, color: _themeTextColor.withOpacity(0.7)),
+                            icon: Icon(Icons.format_list_bulleted_rounded, color: _themeTextColor.withValues(alpha: 0.7)),
                             onPressed: () { 
                               // Mock TOC
                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('قائمة الفصول'))); 
                             },
                           ),
                           IconButton(
-                            icon: Icon(Icons.more_vert_rounded, color: _themeTextColor.withOpacity(0.7)),
+                            icon: Icon(Icons.more_vert_rounded, color: _themeTextColor.withValues(alpha: 0.7)),
                             onPressed: _showMoreOptions,
                           ),
                         ],
@@ -302,7 +301,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
                                width: 100, height: 140,
                                decoration: BoxDecoration(
                                  borderRadius: BorderRadius.circular(12),
-                                 boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
+                                 boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10)],
                                ),
                                child: ClipRRect(
                                  borderRadius: BorderRadius.circular(12),
@@ -427,7 +426,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
          color: AppColors.newBackgroundDark, 
          borderRadius: BorderRadius.circular(28),
          boxShadow: [
-           BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10)),
+           BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 10)),
          ],
        ),
        child: Column(
@@ -463,7 +462,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
                                child: Container(
                                  margin: const EdgeInsets.symmetric(horizontal: 1),
                                  decoration: BoxDecoration(
-                                   color: isActive ? AppColors.newPrimary : Colors.white.withOpacity(0.1),
+                                   color: isActive ? AppColors.newPrimary : Colors.white.withValues(alpha: 0.1),
                                    borderRadius: BorderRadius.circular(2),
                                  ),
                                ),
@@ -578,8 +577,8 @@ class ReaderSettingsModal extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF0A2F35), // Card Green
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 20)],
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 20)],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -643,7 +642,7 @@ class ReaderSettingsModal extends StatelessWidget {
             color: isActive ? AppColors.newPrimary : Colors.transparent, 
             width: 2
           ),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4)],
         ),
       ),
     );
@@ -686,7 +685,7 @@ class MoreOptionsModal extends StatelessWidget {
               margin: const EdgeInsets.only(top: 16, bottom: 24),
               width: 48, height: 6,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2), 
+                color: Colors.white.withValues(alpha: 0.2), 
                 borderRadius: BorderRadius.circular(3)
               ),
             ),
@@ -739,7 +738,7 @@ class MoreOptionsModal extends StatelessWidget {
               child: TextButton(
                 onPressed: () => Navigator.pop(context),
                 style: TextButton.styleFrom(
-                  backgroundColor: Colors.white.withOpacity(0.1),
+                  backgroundColor: Colors.white.withValues(alpha: 0.1),
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
@@ -765,7 +764,7 @@ class MoreOptionsModal extends StatelessWidget {
                 Container(
                   width: 40, height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(icon, color: Colors.white),
@@ -777,7 +776,7 @@ class MoreOptionsModal extends StatelessWidget {
                 ),
               ],
             ),
-            Icon(Icons.chevron_left_rounded, color: Colors.white.withOpacity(0.3)),
+            Icon(Icons.chevron_left_rounded, color: Colors.white.withValues(alpha: 0.3)),
           ],
         ),
       ),

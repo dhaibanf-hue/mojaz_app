@@ -1,5 +1,4 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import '../models/book.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:provider/provider.dart';
@@ -7,7 +6,6 @@ import 'home_v2_screen.dart';
 import 'search_screen.dart';
 import 'library_screen.dart';
 import 'profile_screen.dart';
-import 'ai_assistant_screen.dart';
 import 'audio_player_screen.dart';
 import '../providers/app_provider.dart';
 import '../constants.dart';
@@ -115,7 +113,7 @@ class _MainScreenState extends State<MainScreen> {
           border: Border.all(color: isDark ? Colors.white10 : Colors.grey[200]!),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 20,
               offset: const Offset(0, 8),
             )
@@ -206,7 +204,7 @@ class _MainScreenState extends State<MainScreen> {
         child: Container(
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 30), // Extra bottom padding for home indicator
           decoration: BoxDecoration(
-            color: (isDark ? const Color(0xFF121212) : Colors.white).withOpacity(0.85),
+            color: (isDark ? const Color(0xFF121212) : Colors.white).withValues(alpha: 0.85),
             border: Border(top: BorderSide(color: isDark ? Colors.white10 : Colors.grey[200]!)),
           ),
           child: Row(

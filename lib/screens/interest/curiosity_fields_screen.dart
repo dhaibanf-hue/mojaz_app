@@ -157,7 +157,7 @@ class _CuriosityFieldsScreenState extends State<CuriosityFieldsScreen> {
       ),
       bottomSheet: Container(
         decoration: BoxDecoration(
-          color: (isDark ? bgDark : bgLight).withOpacity(0.9),
+          color: (isDark ? bgDark : bgLight).withValues(alpha: 0.9),
           border: Border(top: BorderSide(color: isDark ? const Color(0xFF27272A) : Colors.grey[100]!)),
         ),
         padding: const EdgeInsets.all(24),
@@ -174,7 +174,7 @@ class _CuriosityFieldsScreenState extends State<CuriosityFieldsScreen> {
                     backgroundColor: AppColors.newPrimary,
                     foregroundColor: Colors.white,
                     elevation: 4,
-                    shadowColor: AppColors.newPrimary.withOpacity(0.2),
+                    shadowColor: AppColors.newPrimary.withValues(alpha: 0.2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -221,7 +221,7 @@ class _CuriosityFieldsScreenState extends State<CuriosityFieldsScreen> {
             width: 2,
           ),
           boxShadow: isSelected 
-              ? [BoxShadow(color: AppColors.newPrimary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))]
+              ? [BoxShadow(color: AppColors.newPrimary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))]
               : [],
         ),
         child: Column(

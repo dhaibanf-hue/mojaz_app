@@ -36,7 +36,7 @@ class PremiumGate extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withOpacity(0.8),
+                    Colors.black.withValues(alpha: 0.8),
                   ],
                 ),
               ),
@@ -128,7 +128,7 @@ class _PremiumOfferSheet extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFF5C518).withOpacity(0.4),
+                  color: const Color(0xFFF5C518).withValues(alpha: 0.4),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -190,7 +190,7 @@ class _PremiumOfferSheet extends StatelessWidget {
                 backgroundColor: AppColors.newPrimary,
                 foregroundColor: Colors.white,
                 elevation: 8,
-                shadowColor: AppColors.newPrimary.withOpacity(0.4),
+                shadowColor: AppColors.newPrimary.withValues(alpha: 0.4),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               child: Text(

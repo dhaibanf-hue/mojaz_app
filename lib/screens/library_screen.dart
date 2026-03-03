@@ -76,7 +76,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
+                          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey[100],
                           shape: BoxShape.circle,
                         ),
                         child: Icon(Icons.auto_stories_rounded, color: AppColors.newPrimary, size: 24),
@@ -153,7 +153,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
             margin: const EdgeInsets.only(left: 10),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: active ? AppColors.newPrimary : (isDark ? Colors.white.withOpacity(0.05) : Colors.white),
+              color: active ? AppColors.newPrimary : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: active ? AppColors.newPrimary : (isDark ? Colors.white12 : Colors.grey[200]!)),
             ),
@@ -163,7 +163,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                     decoration: BoxDecoration(
-                      color: active ? Colors.white24 : AppColors.newPrimary.withOpacity(0.1),
+                      color: active ? Colors.white24 : AppColors.newPrimary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text('$count', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
@@ -262,7 +262,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                         children: [
                            Container(
                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                             decoration: BoxDecoration(color: AppColors.newPrimary.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                             decoration: BoxDecoration(color: AppColors.newPrimary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
                              child: Text(type == 'done' ? 'مكتمل' : '${(percent * 100).toInt()}%', 
                                  style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.newPrimary)),
                            ),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/book.dart';
-import '../constants.dart';
 import 'book_detail_screen.dart';
 
 class CategoryBooksScreen extends StatelessWidget {
@@ -63,7 +62,7 @@ class CategoryBooksScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
              BoxShadow(
-               color: Colors.black.withOpacity(0.05),
+               color: Colors.black.withValues(alpha: 0.05),
                blurRadius: 10,
                offset: const Offset(0, 4),
              )

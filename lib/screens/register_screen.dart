@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants.dart';
-import 'main_screen.dart';
 import 'login_screen.dart';
 import '../providers/app_provider.dart';
 import 'package:provider/provider.dart';
@@ -224,7 +223,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       elevation: 8,
-                      shadowColor: AppColors.newPrimary.withOpacity(0.3),
+                      shadowColor: AppColors.newPrimary.withValues(alpha: 0.3),
                     ),
                     child: _isLoading 
                       ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants.dart';
-import 'main_screen.dart';
 import 'register_screen.dart';
 import '../providers/app_provider.dart';
 import 'package:provider/provider.dart';
@@ -114,12 +113,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           )
                         ],
-                        border: Border.all(color: AppColors.newPrimary.withOpacity(0.1)),
+                        border: Border.all(color: AppColors.newPrimary.withValues(alpha: 0.1)),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -273,7 +272,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           backgroundColor: AppColors.newPrimary,
                           foregroundColor: Colors.white,
                           elevation: 10,
-                          shadowColor: AppColors.newPrimary.withOpacity(0.2),
+                          shadowColor: AppColors.newPrimary.withValues(alpha: 0.2),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),

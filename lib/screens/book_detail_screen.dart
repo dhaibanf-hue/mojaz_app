@@ -6,7 +6,7 @@ import '../models/book.dart';
 import '../constants.dart';
 import 'audio_player_screen.dart';
 import '../providers/app_provider.dart';
-import 'dart:ui'; // For BackdropFilter
+// For BackdropFilter
 import '../widgets/premium_gate.dart';
 
 class BookDetailScreen extends StatelessWidget {
@@ -32,7 +32,7 @@ class BookDetailScreen extends StatelessWidget {
               SliverAppBar(
                 pinned: true,
                 floating: false,
-                backgroundColor: (isDark ? AppColors.newBackgroundDark : AppColors.newBackgroundLight).withOpacity(0.9),
+                backgroundColor: (isDark ? AppColors.newBackgroundDark : AppColors.newBackgroundLight).withValues(alpha: 0.9),
                 elevation: 0,
                 leading: IconButton(
                   icon: Icon(Icons.arrow_forward_ios_rounded, color: isDark ? Colors.white : Colors.black87),
@@ -135,9 +135,9 @@ class BookDetailScreen extends StatelessWidget {
            transform: Matrix4.translationValues(0, 20, 0),
            decoration: BoxDecoration(
              borderRadius: BorderRadius.circular(20),
-             color: AppColors.newPrimary.withOpacity(0.4),
+             color: AppColors.newPrimary.withValues(alpha: 0.4),
              boxShadow: [
-               BoxShadow(color: AppColors.newPrimary.withOpacity(0.4), blurRadius: 40, spreadRadius: 10),
+               BoxShadow(color: AppColors.newPrimary.withValues(alpha: 0.4), blurRadius: 40, spreadRadius: 10),
              ],
            ),
          ),
@@ -163,11 +163,11 @@ class BookDetailScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1F2937).withOpacity(0.5) : Colors.white,
+        color: isDark ? const Color(0xFF1F2937).withValues(alpha: 0.5) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[200]!),
         boxShadow: [
-          if (!isDark) BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)
+          if (!isDark) BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)
         ],
       ),
       child: Row(
@@ -262,7 +262,7 @@ class BookDetailScreen extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.newPrimary,
               elevation: 4,
-              shadowColor: AppColors.newPrimary.withOpacity(0.4),
+              shadowColor: AppColors.newPrimary.withValues(alpha: 0.4),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
           ),
@@ -352,7 +352,7 @@ class BookDetailScreen extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: isDark ? Colors.white10 : Colors.grey[100]!),
           ),

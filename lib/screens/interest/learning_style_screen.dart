@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../constants.dart';
-import 'learning_style_screen.dart'; // Just using logic for flow, next is actually daily_commitment in design
+// Just using logic for flow, next is actually daily_commitment in design
 import 'daily_commitment_screen.dart';
 
 class LearningStyleScreen extends StatefulWidget {
@@ -39,7 +39,7 @@ class _LearningStyleScreenState extends State<LearningStyleScreen> {
         title: Text(
           'خطوة 3 من 4',
           style: TextStyle(
-            color: AppColors.newPrimary.withOpacity(0.8),
+            color: AppColors.newPrimary.withValues(alpha: 0.8),
             fontSize: 14,
             fontWeight: FontWeight.w600
           ),
@@ -139,7 +139,7 @@ class _LearningStyleScreenState extends State<LearningStyleScreen> {
                         backgroundColor: AppColors.newPrimary,
                         foregroundColor: Colors.white,
                         elevation: 4,
-                        shadowColor: AppColors.newPrimary.withOpacity(0.2),
+                        shadowColor: AppColors.newPrimary.withValues(alpha: 0.2),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -204,7 +204,7 @@ class _LearningStyleScreenState extends State<LearningStyleScreen> {
             width: isSelected ? 4 : 2,
           ),
           boxShadow: isSelected 
-             ? [BoxShadow(color: AppColors.newPrimary.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))]
+             ? [BoxShadow(color: AppColors.newPrimary.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 4))]
              : [],
         ),
         child: Column(
@@ -212,7 +212,7 @@ class _LearningStyleScreenState extends State<LearningStyleScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.newPrimary.withOpacity(0.1) : (isDark ? const Color(0xFF27272A) : Colors.grey[50]),
+                color: isSelected ? AppColors.newPrimary.withValues(alpha: 0.1) : (isDark ? const Color(0xFF27272A) : Colors.grey[50]),
                 shape: BoxShape.circle,
               ),
               child: Icon(

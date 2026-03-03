@@ -71,9 +71,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     width: 120, height: 120,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.newPrimary.withOpacity(0.1), width: 4),
+                      border: Border.all(color: AppColors.newPrimary.withValues(alpha: 0.1), width: 4),
                       boxShadow: [
-                         BoxShadow(color: AppColors.newPrimary.withOpacity(0.1), blurRadius: 20),
+                         BoxShadow(color: AppColors.newPrimary.withValues(alpha: 0.1), blurRadius: 20),
                       ],
                       image: const DecorationImage(
                         image: NetworkImage('https://picsum.photos/seed/user/200/200'),
@@ -173,7 +173,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   backgroundColor: AppColors.newPrimary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 4,
-                  shadowColor: AppColors.newPrimary.withOpacity(0.4),
+                  shadowColor: AppColors.newPrimary.withValues(alpha: 0.4),
                 ),
               ),
             ),
@@ -197,10 +197,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
-               if(!isDark) BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))
+               if(!isDark) BoxShadow(color: Colors.grey.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))
             ],
             border: Border.all(color: isDark ? Colors.transparent : Colors.grey[200]!),
           ),
@@ -228,10 +228,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-             color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+             color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
              borderRadius: BorderRadius.circular(12),
              boxShadow: [
-                if(!isDark) BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))
+                if(!isDark) BoxShadow(color: Colors.grey.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))
              ],
              border: Border.all(color: isDark ? Colors.transparent : Colors.grey[200]!),
           ),

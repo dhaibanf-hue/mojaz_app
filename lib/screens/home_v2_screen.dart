@@ -153,8 +153,8 @@ class HomeV2Screen extends StatelessWidget {
               height: 44,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.newPrimary.withOpacity(0.1),
-                border: Border.all(color: AppColors.newPrimary.withOpacity(0.2)),
+                color: AppColors.newPrimary.withValues(alpha: 0.1),
+                border: Border.all(color: AppColors.newPrimary.withValues(alpha: 0.2)),
               ),
                child: ClipOval(
                  child: Image.network(
@@ -202,7 +202,7 @@ class HomeV2Screen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   )
@@ -234,7 +234,7 @@ class HomeV2Screen extends StatelessWidget {
                                 end: Alignment.bottomCenter,
                                 colors: [
                                   Colors.transparent,
-                                  Colors.black.withOpacity(0.8),
+                                  Colors.black.withValues(alpha: 0.8),
                                 ],
                                 stops: const [0.5, 1.0],
                               ),
@@ -280,7 +280,7 @@ class HomeV2Screen extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.notoKufiArabic(
                                   fontSize: 14,
-                                  color: Colors.white.withOpacity(0.8),
+                                  color: Colors.white.withValues(alpha: 0.8),
                                 ),
                               ),
                             ],
@@ -327,7 +327,7 @@ class HomeV2Screen extends StatelessWidget {
                      shape: BoxShape.circle,
                      boxShadow: [
                        BoxShadow(
-                         color: AppColors.newPrimary.withOpacity(0.3),
+                         color: AppColors.newPrimary.withValues(alpha: 0.3),
                          blurRadius: 10,
                          offset: const Offset(0, 4),
                        )
@@ -379,7 +379,7 @@ class HomeV2Screen extends StatelessWidget {
               height: 110,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 4))],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 4))],
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
@@ -456,7 +456,7 @@ class HomeV2Screen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.newBackgroundDark.withOpacity(0.9) : Colors.white.withOpacity(0.9),
+        color: isDark ? AppColors.newBackgroundDark.withValues(alpha: 0.9) : Colors.white.withValues(alpha: 0.9),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -494,7 +494,7 @@ class HomeV2Screen extends StatelessWidget {
               border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[200]!),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 )
@@ -587,7 +587,7 @@ class HomeV2Screen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF121212).withOpacity(0.8) : Colors.white.withOpacity(0.8),
+        color: isDark ? const Color(0xFF121212).withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.8),
         border: Border(top: BorderSide(color: isDark ? Colors.grey[800]! : Colors.grey[100]!)),
       ),
       child: Row(

@@ -121,7 +121,7 @@ class _DailyCommitmentScreenState extends State<DailyCommitmentScreen> {
                     Container(
                       height: 100,
                       decoration: BoxDecoration(
-                        color: AppColors.newPrimary.withOpacity(0.1),
+                        color: AppColors.newPrimary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -167,7 +167,7 @@ class _DailyCommitmentScreenState extends State<DailyCommitmentScreen> {
                     backgroundColor: AppColors.newPrimary,
                     foregroundColor: Colors.white,
                     elevation: 8,
-                    shadowColor: AppColors.newPrimary.withOpacity(0.2),
+                    shadowColor: AppColors.newPrimary.withValues(alpha: 0.2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -204,7 +204,7 @@ class _DailyCommitmentScreenState extends State<DailyCommitmentScreen> {
         ? AppColors.newPrimary 
         : (isDark ? const Color(0xFF27272A) : Colors.grey[200]!);
     Color bgCol = isSelected 
-        ? AppColors.newPrimary.withOpacity(isDark ? 0.2 : 0.05)
+        ? AppColors.newPrimary.withValues(alpha: isDark ? 0.2 : 0.05)
         : Colors.transparent;
     
     return GestureDetector(
@@ -316,7 +316,7 @@ class _LoadingPlanScreenState extends State<LoadingPlanScreen> with SingleTicker
                    begin: Alignment.topCenter,
                    end: Alignment.bottomCenter,
                    colors: [
-                     AppColors.newPrimary.withOpacity(0.05),
+                     AppColors.newPrimary.withValues(alpha: 0.05),
                      Colors.transparent
                    ]
                  )
@@ -337,12 +337,12 @@ class _LoadingPlanScreenState extends State<LoadingPlanScreen> with SingleTicker
                      borderRadius: BorderRadius.circular(24),
                      boxShadow: [
                        BoxShadow(
-                         color: AppColors.newPrimary.withOpacity(0.2),
+                         color: AppColors.newPrimary.withValues(alpha: 0.2),
                          blurRadius: 20,
                          spreadRadius: 5,
                        )
                      ],
-                     border: Border.all(color: AppColors.newPrimary.withOpacity(0.2)),
+                     border: Border.all(color: AppColors.newPrimary.withValues(alpha: 0.2)),
                    ),
                    child: Stack(
                      alignment: Alignment.center,
@@ -353,7 +353,7 @@ class _LoadingPlanScreenState extends State<LoadingPlanScreen> with SingleTicker
                           width: 120,
                           height: 120,
                           child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.newPrimary.withOpacity(0.5)),
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.newPrimary.withValues(alpha: 0.5)),
                             strokeWidth: 2,
                           ),
                         ),
@@ -389,7 +389,7 @@ class _LoadingPlanScreenState extends State<LoadingPlanScreen> with SingleTicker
             right: 0,
             child: Column(
               children: [
-                 Icon(Icons.format_quote, color: AppColors.newPrimary.withOpacity(0.5), size: 30),
+                 Icon(Icons.format_quote, color: AppColors.newPrimary.withValues(alpha: 0.5), size: 30),
                  const SizedBox(height: 8),
                  Text(
                    '"المعرفة هي القوة، ونحن نجهز لك أقصر الطرق إليها"',
