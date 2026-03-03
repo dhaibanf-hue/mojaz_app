@@ -169,7 +169,7 @@ class ProfileScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildRankStat('5,240', 'نقطة إنجاز', Icons.auto_awesome_rounded),
+              _buildRankStat('${provider.points.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}', 'نقطة إنجاز', Icons.auto_awesome_rounded),
               _buildRankDivider(),
               _buildRankStat('${provider.streak}', 'أيام استمرار', Icons.local_fire_department_rounded),
             ],

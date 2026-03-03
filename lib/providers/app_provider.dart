@@ -103,6 +103,9 @@ class AppProvider extends ChangeNotifier {
     // Load last tab
     _currentMainTabIndex = _prefs.getInt('lastMainTab') ?? 0;
 
+    // Load points
+    _points = _prefs.getInt('points') ?? 0;
+
     fetchBooks(silent: true); // Silently load in background
     notifyListeners();
   }
@@ -274,9 +277,12 @@ class AppProvider extends ChangeNotifier {
   void updatePoints(int extraPoints) async {
     final client = Supabase.instance.client;
     final userId = client.auth.currentUser?.id;
-    
+
     // Update locally first
-    // In a real app, points would be in a profile state
+    _points += extraPoints;
+    _prefs.setInt('points', _points);
+    notifyListeners();
+
     if (userId != null) {
       try {
         await client.rpc('increment_points', params: {'user_id': userId, 'amount': extraPoints});
@@ -285,6 +291,10 @@ class AppProvider extends ChangeNotifier {
       }
     }
   }
+
+  // Points
+  int _points = 0;
+  int get points => _points;
 
   // 6. Navigation Management
   int _currentMainTabIndex = 0;

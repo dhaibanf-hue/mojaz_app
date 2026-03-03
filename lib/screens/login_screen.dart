@@ -7,6 +7,7 @@ import '../providers/app_provider.dart';
 import 'package:provider/provider.dart';
 import 'interest/interest_flow_screen.dart';
 import '../widgets/page_wrapper.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -22,7 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _error;
   bool _isPasswordVisible = false;
 
-  void _login() {
+  void _login() async {
     setState(() {
       _error = null;
     });
@@ -39,21 +40,39 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    // Simulate API call
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        
-        // Mock user from provider
+    try {
+      final res = await Supabase.instance.client.auth.signInWithPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      if (mounted && res.user != null) {
         final provider = Provider.of<AppProvider>(context, listen: false);
-        provider.loginAsUser('أحمد محمد', _emailController.text);
+        provider.loginAsUser(
+          res.user!.userMetadata?['full_name'] ?? _emailController.text.split('@')[0],
+          res.user!.email ?? _emailController.text,
+        );
 
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const InterestFlowScreen()),
           (route) => false,
         );
       }
-    });
+    } on AuthException catch (e) {
+      setState(() {
+        if (e.message.contains('Invalid login credentials')) {
+          _error = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+        } else if (e.message.contains('Email not confirmed')) {
+          _error = 'يرجى تأكيد بريدك الإلكتروني أولاً';
+        } else {
+          _error = 'حدث خطأ: ${e.message}';
+        }
+      });
+    } catch (e) {
+      setState(() => _error = 'فشل الاتصال، يرجى المحاولة لاحقاً');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _continueAsGuest() {

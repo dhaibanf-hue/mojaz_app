@@ -7,6 +7,7 @@ import '../constants.dart';
 import 'audio_player_screen.dart';
 import '../providers/app_provider.dart';
 import 'dart:ui'; // For BackdropFilter
+import '../widgets/premium_gate.dart';
 
 class BookDetailScreen extends StatelessWidget {
   final Book book;
@@ -220,6 +221,17 @@ class BookDetailScreen extends StatelessWidget {
     );
   }
 
+  void _handlePlayBook(BuildContext context, Book book) {
+    final provider = Provider.of<AppProvider>(context, listen: false);
+    // Free users cannot access premium books
+    if (book.isPremium && provider.isGuest) {
+      PremiumGate.showPremiumSheet(context);
+      return;
+    }
+    provider.playBook(book);
+    Navigator.push(context, MaterialPageRoute(builder: (_) => AudioPlayerScreen(book: book)));
+  }
+
   Widget _buildActionButtons(BuildContext context) {
     return Column(
       children: [
@@ -227,13 +239,26 @@ class BookDetailScreen extends StatelessWidget {
           width: double.infinity,
           height: 56,
           child: ElevatedButton.icon(
-            onPressed: () {
-              final provider = Provider.of<AppProvider>(context, listen: false);
-              provider.playBook(book); // Start global playback
-              Navigator.push(context, MaterialPageRoute(builder: (_) => AudioPlayerScreen(book: book)));
-            },
-            icon: const Icon(Icons.play_arrow_rounded, color: Colors.white),
-            label: Text('استمع الآن', style: GoogleFonts.notoKufiArabic(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+            onPressed: () => _handlePlayBook(context, book),
+            icon: Stack(
+              alignment: Alignment.center,
+              children: [
+                const Icon(Icons.play_arrow_rounded, color: Colors.white),
+                if (book.isPremium)
+                  Positioned(
+                    top: -2, right: -4,
+                    child: const Icon(Icons.workspace_premium_rounded, color: Color(0xFFF5C518), size: 12),
+                  ),
+              ],
+            ),
+            label: Text(
+              book.isPremium ? 'استمع الآن ✦ مميز' : 'استمع الآن',
+              style: GoogleFonts.notoKufiArabic(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.newPrimary,
               elevation: 4,
@@ -247,9 +272,16 @@ class BookDetailScreen extends StatelessWidget {
           width: double.infinity,
           height: 56,
           child: OutlinedButton.icon(
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AudioPlayerScreen(book: book))), // Same for demo, reader mode inside
+            onPressed: () => _handlePlayBook(context, book),
             icon: const Icon(Icons.menu_book_rounded, color: AppColors.newPrimary),
-            label: Text('اقرأ الملخص', style: GoogleFonts.notoKufiArabic(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.newPrimary)),
+            label: Text(
+              'اقرأ الملخص',
+              style: GoogleFonts.notoKufiArabic(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.newPrimary,
+              ),
+            ),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: AppColors.newPrimary, width: 2),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

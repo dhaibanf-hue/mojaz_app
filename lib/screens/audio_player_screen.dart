@@ -9,6 +9,7 @@ import '../models/book.dart';
 import '../constants.dart';
 import '../providers/app_provider.dart';
 import '../services/tts_service.dart';
+import 'drive_mode_screen.dart';
 
 class AudioPlayerScreen extends StatefulWidget {
   final Book book;
@@ -177,11 +178,16 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
       builder: (context) => MoreOptionsModal(
         book: widget.book,
         toggleFavorite: _toggleFavorite,
+        driveModeAction: () {
+          Navigator.pop(context);
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => DriveModeScreen(book: widget.book)),
+          );
+        },
         downloadAction: () {
            final provider = Provider.of<AppProvider>(context, listen: false);
-           // Toggle download logic
            if (provider.downloadedBookIds.contains(widget.book.id)) {
-              // provider.removeDownload... (mock)
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حذف التحميل')));
            } else {
               provider.markAsDownloaded(widget.book.id);
@@ -190,12 +196,10 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
            Navigator.pop(context);
         },
         sleepTimerAction: () {
-           // Mock sleep timer
            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم ضبط مؤقت النوم: 15 دقيقة')));
            Navigator.pop(context);
         },
         shareAction: () {
-           // Mock share
            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('جاري مشاركة الرابط...')));
            Navigator.pop(context);
         }
@@ -629,6 +633,7 @@ class MoreOptionsModal extends StatelessWidget {
   final VoidCallback downloadAction;
   final VoidCallback sleepTimerAction;
   final VoidCallback shareAction;
+  final VoidCallback driveModeAction;
 
   const MoreOptionsModal({
     super.key,
@@ -637,6 +642,7 @@ class MoreOptionsModal extends StatelessWidget {
     required this.downloadAction,
     required this.sleepTimerAction,
     required this.shareAction,
+    required this.driveModeAction,
   });
 
   @override
@@ -678,6 +684,11 @@ class MoreOptionsModal extends StatelessWidget {
             icon: Icons.bookmark_border_rounded, 
             label: 'إضافة للمحفوظات',
             onTap: toggleFavorite,
+          ),
+          _buildOptionTile(
+            icon: Icons.directions_car_rounded, 
+            label: 'وضع القيادة',
+            onTap: driveModeAction,
           ),
           _buildOptionTile(
             icon: Icons.download_rounded, 

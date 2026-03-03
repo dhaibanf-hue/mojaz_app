@@ -12,6 +12,26 @@ class AiAssistantScreen extends StatefulWidget {
 
 class _AiAssistantScreenState extends State<AiAssistantScreen> {
   final TextEditingController _controller = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +46,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
         children: [
           Expanded(
             child: ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.all(16),
               itemCount: provider.chatMessages.length,
               itemBuilder: (context, index) {
@@ -83,6 +104,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                     if (_controller.text.isNotEmpty) {
                       provider.sendMessage(_controller.text);
                       _controller.clear();
+                      _scrollToBottom();
+                      // Also scroll after AI response delay
+                      Future.delayed(const Duration(milliseconds: 1200), _scrollToBottom);
                     }
                   },
                   backgroundColor: AppColors.primaryButton,

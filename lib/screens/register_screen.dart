@@ -7,6 +7,7 @@ import '../providers/app_provider.dart';
 import 'package:provider/provider.dart';
 import 'interest/interest_flow_screen.dart';
 import '../widgets/page_wrapper.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -24,7 +25,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   String? _error;
 
-  void _register() {
+  void _register() async {
     setState(() {
       _error = null;
     });
@@ -35,8 +36,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     if (_emailController.text.isEmpty || !_emailController.text.contains('@')) {
-        setState(() => _error = 'يرجى إدخال بريد إلكتروني صحيح');
-        return;
+      setState(() => _error = 'يرجى إدخال بريد إلكتروني صحيح');
+      return;
     }
 
     if (_passwordController.text.isEmpty || _passwordController.text.length < 6) {
@@ -46,16 +47,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() => _isLoading = true);
 
-    // Simulate API call
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        
-        // Save user data to provider
+    try {
+      final res = await Supabase.instance.client.auth.signUp(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        data: {'full_name': _nameController.text.trim()},
+      );
+
+      if (mounted && res.user != null) {
         final provider = Provider.of<AppProvider>(context, listen: false);
         provider.loginAsUser(
-          _nameController.text, 
-          _emailController.text,
+          _nameController.text.trim(),
+          res.user!.email ?? _emailController.text,
           password: _passwordController.text,
         );
 
@@ -64,7 +67,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
           (route) => false,
         );
       }
-    });
+    } on AuthException catch (e) {
+      setState(() {
+        if (e.message.contains('already registered') || e.message.contains('already been registered')) {
+          _error = 'هذا البريد الإلكتروني مسجل بالفعل، حاول تسجيل الدخول';
+        } else if (e.message.contains('Password should be')) {
+          _error = 'كلمة المرور ضعيفة جداً، يرجى استخدام 6 أحرف أو أكثر';
+        } else {
+          _error = 'حدث خطأ: ${e.message}';
+        }
+      });
+    } catch (e) {
+      setState(() => _error = 'فشل الاتصال، يرجى المحاولة لاحقاً');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _continueAsGuest() {
