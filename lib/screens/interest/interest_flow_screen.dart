@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../constants.dart';
+import '../../providers/app_provider.dart';
 
 // ============================================================
 // الشاشة الرئيسية الموحدة - 4 خطوات
@@ -72,7 +74,10 @@ class _InterestFlowScreenState extends State<InterestFlowScreen>
     if (_currentStep < 3) {
       _goToStep(_currentStep + 1);
     } else {
-      // الخطوة الأخيرة: انتقل لشاشة التحميل
+      // الخطوة الأخيرة: حفظ البيانات ثم الانتقال لشاشة التحميل
+      final provider = Provider.of<AppProvider>(context, listen: false);
+      provider.saveInterestData(_selectedGoal, _selectedInterests, _selectedStyle, _selectedTime);
+
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const LoadingPlanScreen()),

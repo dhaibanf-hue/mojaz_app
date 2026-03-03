@@ -6,12 +6,18 @@ import '../models/book.dart';
 import '../providers/app_provider.dart';
 import 'category_books_screen.dart'; // Import to navigate to category list
 
-class AllCategoriesScreen extends StatelessWidget {
+class AllCategoriesScreen extends StatefulWidget {
   const AllCategoriesScreen({super.key});
-  
+
+  @override
+  State<AllCategoriesScreen> createState() => _AllCategoriesScreenState();
+}
+
+class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
   // Use constant categories from App as per user request flow
   // "When clicking View All categories, it navigates here"
   
+  String _searchQuery = '';
   final List<CategoryItem> _categories = const [
      CategoryItem(name: 'تطوير الذات', count: 45, icon: Icons.self_improvement, id: 'self_improvement'),
      CategoryItem(name: 'ريادة الأعمال', count: 32, icon: Icons.trending_up, id: 'entrepreneurship'),
@@ -28,6 +34,10 @@ class AllCategoriesScreen extends StatelessWidget {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
     final provider = Provider.of<AppProvider>(context);
     final allBooks = provider.liveBooks.isNotEmpty ? provider.liveBooks : dummyBooks;
+    
+    final filteredCategories = _searchQuery.isEmpty 
+        ? _categories 
+        : _categories.where((c) => c.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
     
     return Scaffold(
       backgroundColor: isDark ? AppColors.newBackgroundDark : AppColors.newBackgroundLight,
@@ -79,6 +89,7 @@ class AllCategoriesScreen extends StatelessWidget {
                        ],
                      ),
                      child: TextField(
+                       onChanged: (val) => setState(() => _searchQuery = val),
                        textAlign: TextAlign.right,
                        textDirection: TextDirection.rtl,
                        decoration: InputDecoration(
@@ -108,9 +119,9 @@ class AllCategoriesScreen extends StatelessWidget {
                    crossAxisSpacing: 16,
                    mainAxisSpacing: 16,
                  ),
-                 itemCount: _categories.length,
+                 itemCount: filteredCategories.length,
                  itemBuilder: (context, index) {
-                   final cat = _categories[index];
+                   final cat = filteredCategories[index];
                    return _buildCategoryCard(context, cat, isDark, allBooks);
                  },
                ),

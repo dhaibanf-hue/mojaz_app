@@ -106,6 +106,12 @@ class AppProvider extends ChangeNotifier {
     // Load points
     _points = _prefs.getInt('points') ?? 0;
 
+    // Load interests
+    _readingGoal = _prefs.getString('readingGoal') ?? '';
+    _selectedInterests = _prefs.getStringList('selectedInterests') ?? [];
+    _learningStyle = _prefs.getString('learningStyle') ?? '';
+    _dailyTime = _prefs.getInt('dailyTime') ?? 0;
+
     fetchBooks(silent: true); // Silently load in background
     notifyListeners();
   }
@@ -296,6 +302,30 @@ class AppProvider extends ChangeNotifier {
   int _points = 0;
   int get points => _points;
 
+  // Interests Data
+  String _readingGoal = '';
+  List<String> _selectedInterests = [];
+  String _learningStyle = '';
+  int _dailyTime = 0;
+
+  String get readingGoal => _readingGoal;
+  List<String> get selectedInterests => _selectedInterests;
+  String get learningStyle => _learningStyle;
+  int get dailyTime => _dailyTime;
+
+  void saveInterestData(String goal, List<String> interests, String style, int time) {
+    _readingGoal = goal;
+    _selectedInterests = interests;
+    _learningStyle = style;
+    _dailyTime = time;
+
+    _prefs.setString('readingGoal', goal);
+    _prefs.setStringList('selectedInterests', interests);
+    _prefs.setString('learningStyle', style);
+    _prefs.setInt('dailyTime', time);
+    notifyListeners();
+  }
+
   // 6. Navigation Management
   int _currentMainTabIndex = 0;
   int get currentMainTabIndex => _currentMainTabIndex;
@@ -339,8 +369,11 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  int communityMembers = 1240;
-
+  int get communityMembers {
+    // محاكاة لنمو حقيقي بعدد الأعضاء يعتمد على الأيام منذ الإطلاق + نقاط المستخدم نفسه
+    final daysSinceLaunch = DateTime.now().difference(DateTime(2024, 1, 1)).inDays;
+    return 1240 + daysSinceLaunch + (_points ~/ 50);
+  }
   bool _remindersEnabled = true;
   bool get remindersEnabled => _remindersEnabled;
   void toggleReminders() {
