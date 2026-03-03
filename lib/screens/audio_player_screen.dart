@@ -102,8 +102,32 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
       if (savedProgress > 0) {
         await _audioPlayer.seek(Duration(seconds: savedProgress));
       }
-      
-      // Removed setState listeners to improve performance
+
+      // Add state listeners to update UI
+      _audioPlayer.playerStateStream.listen((state) {
+        if (mounted) {
+          setState(() {
+            _isPlaying = state.playing;
+          });
+        }
+      });
+
+      _audioPlayer.positionStream.listen((pos) {
+        if (mounted) {
+          setState(() {
+            _position = pos;
+          });
+        }
+      });
+
+      _audioPlayer.durationStream.listen((dur) {
+        if (mounted) {
+          setState(() {
+            _duration = dur ?? Duration.zero;
+          });
+        }
+      });
+
     } catch (e) {
       debugPrint("Error loading audio: $e");
     }

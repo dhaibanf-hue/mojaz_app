@@ -9,15 +9,21 @@ import 'theme.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('Firebase init failed: $e');
+  }
   
   await Supabase.initialize(
-    url: 'https://argtqpknzqkvwkjremff.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyZ3RxcGtuenFrdndranJlbWZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NzQ1OTgsImV4cCI6MjA4NTU1MDU5OH0.eQzPJvrDJKqVCdLIv501JsYSMS_AELyW2rGh6rtpFqQ',
+    url: dotenv.env['SUPABASE_URL'] ?? '',
+    anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
 
   runApp(
