@@ -11,6 +11,8 @@ class Book {
   final String? subtitle;
   final String? targetAudience;
   final String audioUrl;
+  final int? durationMinutes;
+  final int? chaptersCount;
 
   Book({
     required this.id,
@@ -25,6 +27,8 @@ class Book {
     this.subtitle,
     this.targetAudience,
     required this.audioUrl,
+    this.durationMinutes,
+    this.chaptersCount,
   });
 
   factory Book.fromMap(Map<String, dynamic> map) {
@@ -42,7 +46,28 @@ class Book {
       subtitle: map['subtitle'] ?? map['description'] ?? map['author'],
       targetAudience: map['target_audience'],
       audioUrl: _fixUrl(map['audio_file_url']) ?? _fixUrl(map['audio_file']) ?? _fixUrl(map['audio_url']) ?? '',
+      durationMinutes: map['duration_minutes'] ?? 15,
+      chaptersCount: map['chapters_count'] ?? 5,
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'author': author,
+      'cover_url': cover,
+      'rating': rating,
+      'description': description,
+      'category': category,
+      'pageCount': pageCount,
+      'isPremium': isPremium,
+      'subtitle': subtitle,
+      'target_audience': targetAudience,
+      'audio_url': audioUrl,
+      'duration_minutes': durationMinutes,
+      'chapters_count': chaptersCount,
+    };
   }
 
   // Helper helper to make localhost URLs work on Android Emulator

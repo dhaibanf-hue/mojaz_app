@@ -7,6 +7,9 @@ import 'package:provider/provider.dart';
 import 'interest/interest_flow_screen.dart';
 import '../widgets/page_wrapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'forgot_password_screen.dart';
+import '../utils/route_transitions.dart';
+import 'package:animations/animations.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,7 +23,36 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _error;
+  String? _emailError;
   bool _isPasswordVisible = false;
+
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+    try {
+      await Supabase.instance.client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'io.supabase.flutter://login-callback/',
+      );
+    } catch (e) {
+      if (mounted) setState(() => _error = 'حدث خطأ أثناء تسجيل الدخول بجوجل');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _signInWithApple() async {
+    setState(() => _isLoading = true);
+    try {
+      await Supabase.instance.client.auth.signInWithOAuth(
+        OAuthProvider.apple,
+        redirectTo: 'io.supabase.flutter://login-callback/',
+      );
+    } catch (e) {
+      if (mounted) setState(() => _error = 'حدث خطأ أثناء تسجيل الدخول بأبل');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   void _login() async {
     setState(() {
@@ -28,8 +60,10 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     if (_emailController.text.isEmpty || !_emailController.text.contains('@')) {
-      setState(() => _error = 'يرجى إدخال بريد إلكتروني صحيح');
+      setState(() => _emailError = 'يرجى إدخال بريد إلكتروني صحيح');
       return;
+    } else {
+      setState(() => _emailError = null);
     }
 
     if (_passwordController.text.isEmpty || _passwordController.text.length < 6) {
@@ -53,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
 
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const InterestFlowScreen()),
+          FadeThroughPageRoute(page: const InterestFlowScreen()),
           (route) => false,
         );
       }
@@ -79,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
      provider.loginAsUser('ضيف', 'guest@moujaz.app');
      Navigator.pushReplacement(
        context,
-       MaterialPageRoute(builder: (context) => const InterestFlowScreen()),
+       FadeThroughPageRoute(page: const InterestFlowScreen()),
      );
   }
 
@@ -180,10 +214,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             decoration: InputDecoration(
                               hintText: 'name@example.com',
                               hintStyle: TextStyle(color: isDark ? Colors.grey[600] : Colors.grey[300]),
+                              errorText: _emailError,
+                              errorStyle: const TextStyle(height: 0), // Hide text if we want just the red border, or show it
                               border: InputBorder.none,
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                              suffixIcon: Icon(Icons.mail_outline, color: isDark ? Colors.grey[600] : Colors.grey[400]),
+                              suffixIcon: Icon(Icons.mail_outline, color: _emailError != null ? Colors.red : (isDark ? Colors.grey[600] : Colors.grey[400])),
                             ),
+                            onChanged: (v) {
+                              if (_emailError != null) setState(() => _emailError = null);
+                            },
                           ),
                         ),
                         
@@ -231,11 +270,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         
                         const SizedBox(height: 12),
+
                         Align(
                           alignment: Alignment.centerLeft, // RTL Left
                           child: TextButton(
                             onPressed: () {
-                              // Forgot Password Navigation (Optional, not requested to implement fully but link is there)
+                              Navigator.push(
+                                context,
+                                FadeThroughPageRoute(page: const ForgotPasswordScreen()),
+                              );
                             },
                             child: Text(
                               'نسيت كلمة المرور؟',
@@ -327,6 +370,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             context,
                             "جوجل", 
                             "https://lh3.googleusercontent.com/aida-public/AB6AXuA1Zfq7i3YsfQsL9Y5CqQ8Mx6lRfuJdu4mpQaihvrT6zaxJEEo3QyZWKjNKtbh3A-t-2ISRf1NPO6V7rTHYjEdbUFCcSPJEJrio4tEAiXpx-ETjpk0POQWkOGDzcqXibUl1tRKXCWR2JOJ2jDVsKjmBMoJoYbonLjh80Y_wCNtjQK-QcHtzVmGV1HhuMmR1ns20UjB_JpD-gJgU8o3Q6xbp6Lss49uHXW6UoGd779GIr3rhuVMQ0-mESTTUrKMQIyRsPInk04F_W61i",
+                            onTap: _signInWithGoogle,
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -336,6 +380,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             "أبل", 
                             null, // Use icon for Apple
                             icon: Icons.apple,
+                            onTap: _signInWithApple,
                           ),
                         ),
                       ],
@@ -355,9 +400,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         TextButton(
                           onPressed: () {
-                            Navigator.pushReplacement(
+                            Navigator.push(
                               context, 
-                              MaterialPageRoute(builder: (context) => const RegisterScreen())
+                              SharedAxisPageRoute(
+                                page: const RegisterScreen(),
+                                transitionType: SharedAxisTransitionType.horizontal,
+                              ),
                             );
                           },
                           child: Text(
@@ -394,7 +442,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildSocialButton(BuildContext context, String label, String? imageUrl, {IconData? icon}) {
+  Widget _buildSocialButton(BuildContext context, String label, String? imageUrl, {IconData? icon, VoidCallback? onTap}) {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: 56,
@@ -407,7 +455,7 @@ class _LoginScreenState extends State<LoginScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {},
+          onTap: onTap,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

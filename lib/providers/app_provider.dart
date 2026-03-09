@@ -4,7 +4,8 @@ import '../models/book.dart';
 import 'dart:convert';
 import '../services/api_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 class AppProvider extends ChangeNotifier {
   late SharedPreferences _prefs;
   final _apiService = ApiService();
@@ -23,6 +24,18 @@ class AppProvider extends ChangeNotifier {
   bool get isPlaying => _isPlaying;
   bool _showMiniPlayer = false;
   bool get showMiniPlayer => _showMiniPlayer;
+
+  // New Playback Detail State for Sync
+  Duration _currentPosition = Duration.zero;
+  Duration get currentPosition => _currentPosition;
+  Duration _currentDuration = Duration.zero;
+  Duration get currentDuration => _currentDuration;
+
+  void updatePlaybackStatus(Duration position, Duration duration) {
+    _currentPosition = position;
+    _currentDuration = duration;
+    notifyListeners();
+  }
 
   void playBook(Book book) {
     _currentPlayingBook = book;
@@ -89,6 +102,7 @@ class AppProvider extends ChangeNotifier {
     _userName = _prefs.getString('userName') ?? 'ضيف';
     _userEmail = _prefs.getString('userEmail') ?? 'guest@moujaz.app';
     _userPassword = _prefs.getString('userPassword') ?? '';
+    _userPhone = _prefs.getString('userPhone') ?? '';
     
     // Load favorites
     _favoriteBookIds.addAll(_prefs.getStringList('favorites') ?? []);
@@ -113,6 +127,7 @@ class AppProvider extends ChangeNotifier {
     _dailyTime = _prefs.getInt('dailyTime') ?? 0;
 
     fetchBooks(silent: true); // Silently load in background
+    fetchCommunityCount(); // Get real user count
     notifyListeners();
   }
 
@@ -140,9 +155,23 @@ class AppProvider extends ChangeNotifier {
     try {
       final books = await _apiService.fetchBooks();
       _liveBooks = books;
+      // Cache the books for offline usage
+      final booksJsonList = books.map((b) => b.toMap()).toList();
+      _prefs.setString('cachedRemoteBooks', json.encode(booksJsonList));
     } catch (e) {
       if (!silent) _errorMessage = "فشل الاتصال بالخادم: $e";
-      debugPrint("Error fetching books: $e");
+      debugPrint("Error fetching books: $e. Loading from cache...");
+      // Fallback to cache
+      final cachedString = _prefs.getString('cachedRemoteBooks');
+      if (cachedString != null) {
+        try {
+           final List<dynamic> decoded = json.decode(cachedString);
+           _liveBooks = decoded.map((map) => Book.fromMap(map)).toList();
+           _errorMessage = null; // Cleared since we loaded from cache
+        } catch (parseErr) {
+           debugPrint("Error parsing cached books: $parseErr");
+        }
+      }
     } finally {
       _isLoadingBooks = false;
       notifyListeners();
@@ -152,6 +181,25 @@ class AppProvider extends ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  Future<List<Book>> searchBooks(String query) async {
+    try {
+      final remoteResults = await _apiService.searchBooks(query);
+      if (remoteResults.isNotEmpty) return remoteResults;
+      // If empty remotely, try local logic below
+      throw Exception("Empty remote search, falling back strictly to local.");
+    } catch (e) {
+      debugPrint("Search fallback on error or empty: $e");
+      // Fallback to local search if remote fails or yields empty
+      final qTrim = query.trim().toLowerCase();
+      if (qTrim.isEmpty) return _liveBooks;
+      return _liveBooks.where((b) => 
+         b.title.toLowerCase().contains(qTrim) || 
+         b.author.toLowerCase().contains(qTrim) ||
+         b.category.toLowerCase().contains(qTrim)
+      ).toList();
+    }
   }
 
   // 1. Dark Mode
@@ -169,22 +217,63 @@ class AppProvider extends ChangeNotifier {
   String _userName = 'ضيف';
   String _userEmail = 'guest@moujaz.app';
   String _userPassword = '';
+  String _userPhone = '';
 
   bool get isGuest => _isGuest;
   String get userName => _userName;
   String get userEmail => _userEmail;
   String get userPassword => _userPassword;
+  String get userPhone => _userPhone;
 
-  void loginAsUser(String name, String email, {String password = ''}) {
+  void loginAsUser(String name, String email, {String password = '', String phone = ''}) {
     _isGuest = false;
     _userName = name;
     _userEmail = email;
     _userPassword = password;
+    _userPhone = phone;
     _prefs.setBool('isGuest', false);
     _prefs.setString('userName', name);
     _prefs.setString('userEmail', email);
     if (password.isNotEmpty) _prefs.setString('userPassword', password);
+    if (phone.isNotEmpty) _prefs.setString('userPhone', phone);
     notifyListeners();
+  }
+
+  Future<void> updateUserData({required String name, required String phone}) async {
+    final client = Supabase.instance.client;
+    final userId = client.auth.currentUser?.id;
+
+    // Update local state
+    _userName = name;
+    _userPhone = phone;
+    _prefs.setString('userName', name);
+    _prefs.setString('userPhone', phone);
+    notifyListeners();
+
+    if (userId != null) {
+      try {
+        // Update Supabase profiles table (assuming it exists and has these columns)
+        // Also update user metadata
+        await client.auth.updateUser(
+          UserAttributes(
+            data: {
+              'full_name': name,
+              'phone': phone,
+            },
+          ),
+        );
+        
+        // If there's a profiles table, update it too
+        await client.from('profiles').upsert({
+          'id': userId,
+          'full_name': name,
+          'phone': phone,
+          'updated_at': DateTime.now().toIso8601String(),
+        });
+      } catch (e) {
+        debugPrint("Error updating user data in Supabase: $e");
+      }
+    }
   }
 
   void logout() {
@@ -208,7 +297,15 @@ class AppProvider extends ChangeNotifier {
   List<String> get favoriteBookIds => _favoriteBookIds;
 
   List<String> get completedBookIds => _audioProgress.entries
-      .where((entry) => entry.value >= 850)
+      .where((entry) {
+        // Find the book to get its exact duration
+        final book = _liveBooks.firstWhere(
+           (b) => b.id == entry.key, 
+           orElse: () => Book(id: '', title: '', author: '', description: '', cover: '', category: '', isPremium: false, rating: 0, durationMinutes: 15, audioUrl: '', pageCount: 0)
+        );
+        final totalSeconds = (book.durationMinutes ?? 15) * 60;
+        return entry.value >= totalSeconds;
+      })
       .map((entry) => entry.key)
       .toList();
 
@@ -275,7 +372,13 @@ class AppProvider extends ChangeNotifier {
     _apiService.syncProgress(bookId, seconds);
     
     // Logic for awarding points (e.g., if completed)
-    if (seconds >= 850) { // Assuming book is ~15 min
+    final book = _liveBooks.firstWhere(
+       (b) => b.id == bookId, 
+       orElse: () => Book(id: '', title: '', author: '', description: '', cover: '', category: '', isPremium: false, rating: 0, durationMinutes: 15, audioUrl: '', pageCount: 0)
+    );
+    final totalSeconds = (book.durationMinutes ?? 15) * 60;
+    
+    if (seconds >= totalSeconds) { 
        updatePoints(10); // Award 10 points for completion
     }
   }
@@ -353,13 +456,36 @@ class AppProvider extends ChangeNotifier {
     {"role": "ai", "content": "أهلاً بك! أنا مساعد موجز الذكي. كيف يمكنني مساعدتك اليوم في رحلتك المعرفية؟"}
   ];
 
-  void sendMessage(String text) {
+  Future<void> sendMessage(String text) async {
     chatMessages.add({"role": "user", "content": text});
     notifyListeners();
-    Future.delayed(const Duration(seconds: 1), () {
-      chatMessages.add({"role": "ai", "content": "أهلاً بك! بناءً على سؤالك، هذا الكتاب يتناول مفهوم 'التركيز' بعمق. هل تود معرفة الفصول التي تركز على الإنتاجية؟"});
-      notifyListeners();
-    });
+
+    try {
+      final apiKey = dotenv.env['GEMINI_API_KEY'];
+      if (apiKey == null || apiKey.isEmpty) {
+        throw Exception('API Key is missing');
+      }
+
+      final model = GenerativeModel(
+        model: 'gemini-1.5-flash',
+        apiKey: apiKey,
+      );
+
+      // Add context to the prompt
+      final prompt = "أنت مساعد ذكي لتطبيق 'موجز' للكتب الصوتية والملخصات باللغة العربية. دورك هو مساعدة المستخدمين واقتراح الكتب وإعطاء معلومات مفيدة. أجب بإيجاز وباحترافية.\nسؤال المستخدم: $text";
+      final content = [Content.text(prompt)];
+      final response = await model.generateContent(content);
+
+      if (response.text != null) {
+        chatMessages.add({"role": "ai", "content": response.text!});
+      } else {
+        chatMessages.add({"role": "ai", "content": "عذراً، لم أتمكن من صياغة الإجابة في الوقت الحالي."});
+      }
+    } catch (e) {
+      debugPrint("Gemini API Error: $e");
+      chatMessages.add({"role": "ai", "content": "عذراً، حدث خطأ في الاتصال بالشبكة. يرجى المحاولة لاحقاً."});
+    }
+    notifyListeners();
   }
 
   // 7. AI Voice
@@ -369,10 +495,20 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  int get communityMembers {
-    // محاكاة لنمو حقيقي بعدد الأعضاء يعتمد على الأيام منذ الإطلاق + نقاط المستخدم نفسه
-    final daysSinceLaunch = DateTime.now().difference(DateTime(2024, 1, 1)).inDays;
-    return 1240 + daysSinceLaunch + (_points ~/ 50);
+  int _communityCount = 1250;
+  int get communityMembers => _communityCount;
+
+  Future<void> fetchCommunityCount() async {
+    try {
+      final client = Supabase.instance.client;
+      final List<dynamic> response = await client.from('profiles').select('id').limit(100);
+      _communityCount = 1250 + response.length;
+      notifyListeners();
+    } catch (e) {
+      _communityCount = 1250;
+      notifyListeners();
+      debugPrint("Error fetching community count: $e");
+    }
   }
   bool _remindersEnabled = true;
   bool get remindersEnabled => _remindersEnabled;

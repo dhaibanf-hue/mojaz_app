@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../constants.dart';
 import 'welcome_screen.dart';
+import '../utils/route_transitions.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -11,14 +12,31 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  double _opacity = 0.0;
+
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 3), () {
+    _startAnimation();
+  }
+
+  void _startAnimation() {
+    // Fade in after a brief moment
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) setState(() => _opacity = 1.0);
+    });
+
+    // Fade out before navigating
+    Future.delayed(const Duration(milliseconds: 1800), () {
+      if (mounted) setState(() => _opacity = 0.0);
+    });
+
+    // Navigate at 2 seconds
+    Future.delayed(const Duration(milliseconds: 2000), () {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+          FadeThroughPageRoute(page: const WelcomeScreen()),
         );
       }
     });
@@ -29,13 +47,14 @@ class _SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       backgroundColor: AppColors.primaryBg,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Shimmer.fromColors(
-              baseColor: Colors.white,
-              highlightColor: AppColors.primaryButton.withValues(alpha: 0.5),
-              child: const Text(
+        child: AnimatedOpacity(
+          opacity: _opacity,
+          duration: Duration(milliseconds: _opacity == 1.0 ? 300 : 200),
+          curve: Curves.easeInOut,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
                 'موجز',
                 style: TextStyle(
                   color: AppColors.logo,
@@ -44,8 +63,8 @@ class _SplashScreenState extends State<SplashScreen> {
                   letterSpacing: 2,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

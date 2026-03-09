@@ -7,6 +7,8 @@ import 'package:provider/provider.dart';
 import 'interest/interest_flow_screen.dart';
 import '../widgets/page_wrapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/route_transitions.dart';
+import 'package:animations/animations.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -23,6 +25,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   
   bool _isLoading = false;
   String? _error;
+  String? _emailError;
+  bool _isPasswordVisible = false;
 
   void _register() async {
     setState(() {
@@ -35,7 +39,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     if (_emailController.text.isEmpty || !_emailController.text.contains('@')) {
-      setState(() => _error = 'يرجى إدخال بريد إلكتروني صحيح');
+      setState(() => _emailError = 'يرجى إدخال بريد إلكتروني صحيح');
+      return;
+    } else {
+      setState(() => _emailError = null);
+    }
+
+    if (_phoneController.text.isEmpty || _phoneController.text.length < 10) {
+      setState(() => _error = 'يرجى إدخال رقم هاتف صحيح (10 أرقام على الأقل)');
       return;
     }
 
@@ -50,7 +61,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final res = await Supabase.instance.client.auth.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
-        data: {'full_name': _nameController.text.trim()},
+        data: {
+          'full_name': _nameController.text.trim(),
+          'phone': _phoneController.text.trim(),
+        },
       );
 
       if (mounted && res.user != null) {
@@ -62,7 +76,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
 
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const InterestFlowScreen()),
+          FadeThroughPageRoute(page: const InterestFlowScreen()),
           (route) => false,
         );
       }
@@ -88,7 +102,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
      provider.logout(); // Ensure guest mode
      Navigator.pushReplacement(
        context,
-       MaterialPageRoute(builder: (context) => const InterestFlowScreen()),
+       FadeThroughPageRoute(page: const InterestFlowScreen()),
      );
   }
 
@@ -113,7 +127,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: Icon(Icons.arrow_back_ios, color: AppColors.newPrimary),
+            icon: Icon(Icons.arrow_back_ios, color: AppColors.newPrimary, size: 20),
             onPressed: () => Navigator.pop(context),
           ),
         ),
@@ -160,15 +174,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   isDark: isDark,
+                  errorText: _emailError,
+                  onChanged: (v) {
+                    if (_emailError != null) setState(() => _emailError = null);
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildTextField(
+                  label: 'رقم الهاتف',
+                  hint: '05xxxxxxxx',
+                  icon: Icons.phone_android_outlined,
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  isDark: isDark,
                 ),
                 const SizedBox(height: 16),
                 _buildTextField(
                   label: 'كلمة المرور',
                   hint: '••••••••',
-                  icon: Icons.lock_open,
+                  icon: Icons.lock_outline,
                   controller: _passwordController,
                   isPassword: true,
                   isDark: isDark,
+                  onToggleVisibility: () {
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
+                  },
+                  isPasswordVisible: _isPasswordVisible,
                 ),
     
                 const SizedBox(height: 16),
@@ -183,6 +216,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     Expanded(
                       child: RichText(
+                        textAlign: TextAlign.right,
                         text: TextSpan(
                           style: GoogleFonts.manrope(fontSize: 12, color: isDark ? Colors.grey[400] : Colors.grey[600]),
                           children: [
@@ -292,9 +326,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.pushReplacement(
+                        Navigator.push(
                           context, 
-                          MaterialPageRoute(builder: (context) => const LoginScreen())
+                          SharedAxisPageRoute(
+                            page: const LoginScreen(),
+                            transitionType: SharedAxisTransitionType.horizontal,
+                          ),
                         );
                       },
                       child: Text(
@@ -308,8 +345,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ],
                 ),
     
-                // Ensure Guest Mode is also available here if desired, or kept only on Login as per design flow usually. 
-                // User specifically asked for "Continue as Guest option in THESE pages", so adding it here too for consistency.
                  TextButton(
                   onPressed: _continueAsGuest,
                   child: Text(
@@ -337,6 +372,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required bool isDark,
     bool isPassword = false,
     TextInputType keyboardType = TextInputType.text,
+    VoidCallback? onToggleVisibility,
+    bool isPasswordVisible = false,
+    String? errorText,
+    ValueChanged<String>? onChanged,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -356,26 +395,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFFAFAFA),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.transparent), // Border can be added on focus
+            border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[200]!),
           ),
           child: TextField(
             controller: controller,
-            obscureText: isPassword,
+            obscureText: isPassword && !isPasswordVisible,
             keyboardType: keyboardType,
+            textAlign: TextAlign.right, // RTL
             style: TextStyle(color: isDark ? Colors.white : Colors.black87),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(color: isDark ? Colors.grey[600] : Colors.grey[400]),
+              errorText: errorText,
+              errorStyle: const TextStyle(height: 0),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(16),
-              suffixIcon: Icon(icon, color: Colors.grey[400]),
               prefixIcon: isPassword 
                 ? IconButton(
-                    icon: const Icon(Icons.visibility_off, color: Colors.grey),
-                    onPressed: () {},
+                    icon: Icon(
+                      isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      color: Colors.grey,
+                    ),
+                    onPressed: onToggleVisibility,
                   )
                 : null,
+              suffixIcon: Icon(icon, color: errorText != null ? Colors.red : Colors.grey[400]),
             ),
+            onChanged: onChanged,
           ),
         ),
       ],

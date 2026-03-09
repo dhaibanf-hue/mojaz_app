@@ -39,6 +39,9 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   int _currentSentenceIndex = 0;
   Timer? _progressSaveTimer;
   final ScrollController _scrollController = ScrollController();
+  
+  // Text Levels
+  int _summaryLevel = 1; // 0=Short, 1=Medium, 2=Detailed
 
   @override
   void initState() {
@@ -57,6 +60,20 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
     _progressSaveTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted) _saveAllProgress();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize dark mode if not explicitly set
+    if (_activeThemeId == 'white') {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        if (isDark) {
+           _activeThemeId = 'dark';
+           _themeBgColor = AppColors.newBackgroundDark;
+           _themeTextColor = Colors.white;
+        }
+    }
   }
 
   void _saveAllProgress() {
@@ -184,10 +201,11 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
           _themeTextColor = text;
         }),
         onReset: () => setState(() {
+           final isDark = Theme.of(context).brightness == Brightness.dark;
            _fontSize = 18.0;
-           _activeThemeId = 'white';
-           _themeBgColor = Colors.white;
-           _themeTextColor = const Color(0xFF1E293B);
+           _activeThemeId = isDark ? 'dark' : 'white';
+           _themeBgColor = isDark ? AppColors.newBackgroundDark : Colors.white;
+           _themeTextColor = isDark ? Colors.white : const Color(0xFF1E293B);
         }),
       ),
     );
@@ -346,9 +364,26 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
                         ),
                         const SizedBox(height: 32),
                         
+                        // Text Levels Toolbar
+                        Container(
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: _activeThemeId == 'dark' ? const Color(0xFF1E293B) : Colors.grey[100],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              _buildLevelTab(0, 'موجز'),
+                              _buildLevelTab(1, 'متوسط'),
+                              _buildLevelTab(2, 'مفصل'),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
                         // Text Content
                         Text(
-                          'المقدمة',
+                          'الملخص (${_getLevelName()})',
                           style: GoogleFonts.notoKufiArabic(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -357,28 +392,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          widget.book.description, // Using full description as demo text
-                          style: GoogleFonts.notoKufiArabic(
-                            fontSize: _fontSize,
-                            color: _activeThemeId == 'dark' ? Colors.grey[300] : Colors.grey[800],
-                            height: 1.8,
-                          ),
-                          textAlign: TextAlign.justify,
-                        ),
-                        
-                        // Demo extra text
-                         const SizedBox(height: 20),
-                         Text(
-                          'ما الفائدة من هذا الملخص لي؟',
-                          style: GoogleFonts.notoKufiArabic(
-                            fontSize: _fontSize + 4,
-                            fontWeight: FontWeight.bold,
-                            color: _themeTextColor,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'لطالما كان للبيئة عدو واضح: التلوث، الجرافات، المداخن، والشهية المتهورة للصناعة. هذا التصور هو ما قاد انتصارات حقيقية. لكن تغير المناخ يغير الخريطة القديمة بالكامل.',
+                          _getSummaryText(), // Dynamic description based on levels
                           style: GoogleFonts.notoKufiArabic(
                             fontSize: _fontSize,
                             color: _activeThemeId == 'dark' ? Colors.grey[300] : Colors.grey[800],
@@ -401,6 +415,49 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
               child: _buildFloatingPlayer(),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  String _getLevelName() {
+    if (_summaryLevel == 0) return 'قصير';
+    if (_summaryLevel == 1) return 'متوسط';
+    return 'مفصل ومليء بالأمثلة';
+  }
+
+  String _getSummaryText() {
+    final original = widget.book.description;
+    if (_summaryLevel == 0) {
+      if (original.length < 50) return original;
+      return "هذا الملخص يركز على الفكرة الأساسية فقط من الكتاب بطريقة سريعة ومختصرة جداً لتوفير الوقت.\n${original.substring(0, (original.length * 0.3).toInt())}...";
+    } else if (_summaryLevel == 1) {
+      return original;
+    } else {
+      return "$original\n\nتوسعة وتفاصيل التلخيص:\nهذا القسم يحتوي على نظرة أعمق وتفاصيل أكثر وشرح لمحتوى الكتاب مع أمثلة إضافية لفهم أعمق للقارئ المهتم بالغوص في التفاصيل.";
+    }
+  }
+
+  Widget _buildLevelTab(int index, String label) {
+    final active = _summaryLevel == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _summaryLevel = index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: active ? AppColors.newPrimary : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: GoogleFonts.notoKufiArabic(
+              fontSize: 12,
+              fontWeight: active ? FontWeight.bold : FontWeight.w500,
+              color: active ? Colors.white : (_activeThemeId == 'dark' ? Colors.grey[400] : Colors.grey[600]),
+            ),
+          ),
         ),
       ),
     );
@@ -571,11 +628,13 @@ class ReaderSettingsModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    bool isSystemDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF0A2F35), // Card Green
+        color: isSystemDark ? const Color(0xFF1E293B) : const Color(0xFF0A2F35), // Slate or Card Green
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 20)],
@@ -584,11 +643,11 @@ class ReaderSettingsModal extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
            // Themes
-           Row(
+            Row(
              mainAxisAlignment: MainAxisAlignment.spaceBetween,
              children: [
                _buildThemeBtn('black', Colors.black, Colors.white),
-               _buildThemeBtn('dark', const Color(0xFF062127), Colors.white), // Dark Teal
+               _buildThemeBtn('dark', isSystemDark ? AppColors.newBackgroundDark : const Color(0xFF062127), Colors.white), // Dark Teal
                _buildThemeBtn('cream', const Color(0xFFF5E6CC), Colors.black87),
                _buildThemeBtn('white', Colors.white, Colors.black87),
              ],
