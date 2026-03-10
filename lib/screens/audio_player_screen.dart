@@ -4,6 +4,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/book.dart';
 import '../constants.dart';
 import '../providers/app_provider.dart';
@@ -18,7 +19,7 @@ class AudioPlayerScreen extends StatefulWidget {
   State<AudioPlayerScreen> createState() => _AudioPlayerScreenState();
 }
 
-class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
+class _AudioPlayerScreenState extends State<AudioPlayerScreen> with WidgetsBindingObserver {
   late AudioPlayer _audioPlayer;
   final TtsService _ttsService = TtsService();
   
@@ -40,14 +41,21 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   Timer? _progressSaveTimer;
   final ScrollController _scrollController = ScrollController();
   
+  // Stream subscriptions for proper disposal
+  StreamSubscription? _playerStateSub;
+  StreamSubscription? _positionSub;
+  StreamSubscription? _durationSub;
+  
   // Text Levels
   int _summaryLevel = 1; // 0=Short, 1=Medium, 2=Detailed
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _audioPlayer = AudioPlayer();
     _mySessionId = DateTime.now().millisecondsSinceEpoch.toString();
+    _loadReaderSettings();
     _initAudio();
     _initTts();
     
@@ -60,6 +68,44 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
     _progressSaveTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted) _saveAllProgress();
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _progressSaveTimer?.cancel();
+    } else if (state == AppLifecycleState.resumed) {
+      _progressSaveTimer?.cancel();
+      _progressSaveTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+        if (mounted) _saveAllProgress();
+      });
+    }
+  }
+
+  Future<void> _loadReaderSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _fontSize = prefs.getDouble('readerFontSize') ?? 18.0;
+        final savedTheme = prefs.getString('readerTheme');
+        if (savedTheme != null) {
+          _activeThemeId = savedTheme;
+          if (_activeThemeId == 'dark') {
+            _themeBgColor = AppColors.newBackgroundDark;
+            _themeTextColor = Colors.white;
+          } else {
+            _themeBgColor = Colors.white;
+            _themeTextColor = const Color(0xFF1E293B);
+          }
+        }
+      });
+    }
+  }
+
+  Future<void> _saveReaderSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('readerFontSize', _fontSize);
+    await prefs.setString('readerTheme', _activeThemeId);
   }
 
   @override
@@ -78,7 +124,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
 
   void _saveAllProgress() {
     if (!mounted) return;
-    final provider = Provider.of<AppProvider>(context, listen: false);
+    final provider = Provider.of<BooksProvider>(context, listen: false);
     provider.saveBookProgress(widget.book.id, _position.inSeconds);
   }
 
@@ -107,12 +153,28 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
 
   Future<void> _initAudio() async {
     try {
-      final provider = Provider.of<AppProvider>(context, listen: false);
+      final provider = Provider.of<BooksProvider>(context, listen: false);
       final savedProgress = provider.getBookProgress(widget.book.id);
       
-      // Load real audio if available
       if (widget.book.audioUrl.isNotEmpty) {
-         await _audioPlayer.setUrl(widget.book.audioUrl);
+         try {
+           await _audioPlayer.setUrl(widget.book.audioUrl).timeout(
+             const Duration(seconds: 10),
+             onTimeout: () => throw TimeoutException('انتهت مهلة اتصال الملف الصوتي'),
+           );
+         } on TimeoutException catch (e) {
+           if (mounted) {
+             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'انتهت مهلة الاتصال')));
+           }
+         } catch (e) {
+           if (mounted) {
+             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('فشل تحميل الملف الصوتي: $e')));
+           }
+         }
+      } else {
+         if (mounted) {
+             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('عذراً، لا يوجد ملف صوتي متاح لهذا الكتاب')));
+         }
       }
       
       if (savedProgress > 0) {
@@ -120,7 +182,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
       }
 
       // Add state listeners to update UI
-      _audioPlayer.playerStateStream.listen((state) {
+      _playerStateSub = _audioPlayer.playerStateStream.listen((state) {
         if (mounted) {
           setState(() {
             _isPlaying = state.playing;
@@ -128,7 +190,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
         }
       });
 
-      _audioPlayer.positionStream.listen((pos) {
+      _positionSub = _audioPlayer.positionStream.listen((pos) {
         if (mounted) {
           setState(() {
             _position = pos;
@@ -136,7 +198,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
         }
       });
 
-      _audioPlayer.durationStream.listen((dur) {
+      _durationSub = _audioPlayer.durationStream.listen((dur) {
         if (mounted) {
           setState(() {
             _duration = dur ?? Duration.zero;
@@ -151,7 +213,11 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _progressSaveTimer?.cancel();
+    _playerStateSub?.cancel();
+    _positionSub?.cancel();
+    _durationSub?.cancel();
     _saveAllProgress();
     _audioPlayer.dispose();
     _ttsService.stop();
@@ -180,7 +246,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
 
   // --- Actions ---
   void _toggleFavorite() {
-    final provider = Provider.of<AppProvider>(context, listen: false);
+    final provider = Provider.of<BooksProvider>(context, listen: false);
     provider.toggleFavorite(widget.book);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(provider.isFavorite(widget.book.id) ? 'تمت الإضافة للمفضلة' : 'تم الحذف من المفضلة'), duration: const Duration(seconds: 1)),
@@ -227,7 +293,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
           );
         },
         downloadAction: () {
-           final provider = Provider.of<AppProvider>(context, listen: false);
+           final provider = Provider.of<BooksProvider>(context, listen: false);
            if (provider.downloadedBookIds.contains(widget.book.id)) {
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حذف التحميل')));
            } else {
@@ -250,7 +316,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<AppProvider>(context);
+    final provider = Provider.of<BooksProvider>(context);
     final isFav = provider.isFavorite(widget.book.id);
     // Use theme text color or fallback based on current _themeBgColor brightness? 
     // Actually we set _themeTextColor explicitly.

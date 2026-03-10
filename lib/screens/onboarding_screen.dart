@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../constants.dart';
 import 'login_screen.dart';
 import '../widgets/page_wrapper.dart';
+import '../utils/route_transitions.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -54,7 +55,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _onComplete() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      FadeThroughPageRoute(page: const LoginScreen()),
     );
   }
 

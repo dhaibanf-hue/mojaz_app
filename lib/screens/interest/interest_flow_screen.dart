@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../constants.dart';
 import '../../providers/app_provider.dart';
+import '../../utils/route_transitions.dart';
 
 // ============================================================
 // الشاشة الرئيسية الموحدة - 4 خطوات
@@ -75,12 +76,12 @@ class _InterestFlowScreenState extends State<InterestFlowScreen>
       _goToStep(_currentStep + 1);
     } else {
       // الخطوة الأخيرة: حفظ البيانات ثم الانتقال لشاشة التحميل
-      final provider = Provider.of<AppProvider>(context, listen: false);
+      final provider = Provider.of<AuthProvider>(context, listen: false);
       provider.saveInterestData(_selectedGoal, _selectedInterests, _selectedStyle, _selectedTime);
 
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const LoadingPlanScreen()),
+        FadeThroughPageRoute(page: const LoadingPlanScreen()),
       );
     }
   }

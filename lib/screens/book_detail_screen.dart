@@ -6,21 +6,40 @@ import '../models/book.dart';
 import '../constants.dart';
 import 'audio_player_screen.dart';
 import '../providers/app_provider.dart';
+import '../utils/route_transitions.dart';
 // For BackdropFilter
 import '../widgets/premium_gate.dart';
 
-class BookDetailScreen extends StatelessWidget {
+class BookDetailScreen extends StatefulWidget {
   final Book book;
   final String? heroTag;
 
   const BookDetailScreen({super.key, required this.book, this.heroTag});
 
   @override
+  State<BookDetailScreen> createState() => _BookDetailScreenState();
+}
+
+class _BookDetailScreenState extends State<BookDetailScreen> {
+  double _contentOpacity = 0.0;
+  bool _isSummaryExpanded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Fade in content right after the Hero animation settles
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() => _contentOpacity = 1.0);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final provider = Provider.of<AppProvider>(context);
-    final isDownloaded = provider.downloadedBookIds.contains(book.id);
-    final isFavorite = provider.favoriteBookIds.contains(book.id);
+    final booksProvider = Provider.of<BooksProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context);
+    final isDownloaded = booksProvider.downloadedBookIds.contains(widget.book.id);
+    final isFavorite = booksProvider.favoriteBookIds.contains(widget.book.id);
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.newBackgroundDark : AppColors.newBackgroundLight,
@@ -55,12 +74,19 @@ class BookDetailScreen extends StatelessWidget {
                   IconButton(
                     icon: Icon(isDownloaded ? Icons.download_done_rounded : Icons.download_outlined, 
                               color: isDownloaded ? AppColors.newPrimary : (isDark ? Colors.white70 : Colors.black54)),
-                    onPressed: () => provider.toggleDownload(book.id),
+                    onPressed: () => booksProvider.toggleDownload(widget.book.id),
                   ),
                   IconButton(
-                    icon: Icon(isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded, 
-                              color: isFavorite ? Colors.redAccent : (isDark ? Colors.white70 : Colors.black54)),
-                    onPressed: () => provider.toggleFavorite(book),
+                    icon: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 140),
+                      transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+                      child: Icon(
+                        isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded, 
+                        key: ValueKey(isFavorite),
+                        color: isFavorite ? Colors.redAccent : (isDark ? Colors.white70 : Colors.black54)
+                      ),
+                    ),
+                    onPressed: () => booksProvider.toggleFavorite(widget.book),
                   ),
                 ],
               ),
@@ -72,47 +98,59 @@ class BookDetailScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center, // Center cover
                     children: [
-                       // Hero Cover
+                       // Hero Cover outside the fade
                        _buildHeroCover(context, isDark),
                        const SizedBox(height: 24),
                        
-                       // Title & Author
-                       Text(
-                         book.title,
-                         textAlign: TextAlign.center,
-                         style: GoogleFonts.notoKufiArabic(
-                           fontSize: 24,
-                           fontWeight: FontWeight.bold,
-                           color: isDark ? Colors.white : Colors.black87,
+                       AnimatedOpacity(
+                         opacity: _contentOpacity,
+                         duration: const Duration(milliseconds: 200),
+                         child: Column(
+                           children: [
+                             // Title & Author
+                             Text(
+                               widget.book.title,
+                               textAlign: TextAlign.center,
+                               style: GoogleFonts.notoKufiArabic(
+                                 fontSize: 24,
+                                 fontWeight: FontWeight.bold,
+                                 color: isDark ? Colors.white : Colors.black87,
+                               ),
+                             ),
+                             const SizedBox(height: 8),
+                             Text(
+                               widget.book.author,
+                               textAlign: TextAlign.center,
+                               style: GoogleFonts.notoKufiArabic(
+                                 fontSize: 16,
+                                 color: Colors.grey[500],
+                               ),
+                             ),
+                             const SizedBox(height: 32),
+                             
+                             // Stats Bar
+                             _buildStatsBar(context, isDark),
+                             const SizedBox(height: 32),
+                             
+                             // Action Buttons
+                             _buildActionButtons(context),
+                             const SizedBox(height: 32),
+                             
+                             // Summary
+                             _buildSummarySection(context, isDark),
+                             const SizedBox(height: 32),
+                             
+                             // Key Takeaways (Premium Gate)
+                             PremiumGate(
+                               isPremium: widget.book.isPremium,
+                               userIsPremium: !authProvider.isGuest,
+                               child: _buildTakeawaysSection(context, isDark),
+                             ),
+                             
+                             const SizedBox(height: 120), // Bottom padding
+                           ],
                          ),
                        ),
-                       const SizedBox(height: 8),
-                       Text(
-                         book.author,
-                         textAlign: TextAlign.center,
-                         style: GoogleFonts.notoKufiArabic(
-                           fontSize: 16,
-                           color: Colors.grey[500],
-                         ),
-                       ),
-                       const SizedBox(height: 32),
-                       
-                       // Stats Bar
-                       _buildStatsBar(context, isDark),
-                       const SizedBox(height: 32),
-                       
-                       // Action Buttons
-                       _buildActionButtons(context),
-                       const SizedBox(height: 32),
-                       
-                       // Summary
-                       _buildSummarySection(context, isDark),
-                       const SizedBox(height: 32),
-                       
-                       // Key Takeaways
-                       _buildTakeawaysSection(context, isDark),
-                       
-                       const SizedBox(height: 120), // Bottom padding
                     ],
                   ),
                 ),
@@ -143,11 +181,11 @@ class BookDetailScreen extends StatelessWidget {
          ),
          // Actual Image
          Hero(
-           tag: heroTag ?? 'detail-${book.id}',
+           tag: widget.heroTag ?? 'detail-${widget.book.id}',
            child: ClipRRect(
              borderRadius: BorderRadius.circular(16),
              child: CachedNetworkImage(
-               imageUrl: book.cover,
+               imageUrl: widget.book.cover,
                width: 180,
                height: 270,
                fit: BoxFit.cover,
@@ -173,11 +211,11 @@ class BookDetailScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem(context, Icons.star_rounded, book.rating.toString(), 'التقييم', Colors.amber),
+          _buildStatItem(context, Icons.star_rounded, widget.book.rating.toString(), 'التقييم', Colors.amber),
           _buildVerticalDivider(isDark),
-          _buildStatItem(context, Icons.category_rounded, book.category, 'الفئة', AppColors.newPrimary),
+          _buildStatItem(context, Icons.category_rounded, widget.book.category, 'الفئة', AppColors.newPrimary),
           _buildVerticalDivider(isDark),
-          _buildStatItem(context, Icons.timer_rounded, '18 د', 'المدة', isDark ? Colors.white70 : Colors.black54),
+          _buildStatItem(context, Icons.timer_rounded, '${widget.book.durationMinutes ?? 15} د', 'المدة', isDark ? Colors.white70 : Colors.black54),
         ],
       ),
     );
@@ -221,15 +259,16 @@ class BookDetailScreen extends StatelessWidget {
     );
   }
 
-  void _handlePlayBook(BuildContext context, Book book) {
-    final provider = Provider.of<AppProvider>(context, listen: false);
+  void _handlePlayBook(BuildContext context, Book pBook) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final audioProvider = Provider.of<AudioPlayerProvider>(context, listen: false);
     // Free users cannot access premium books
-    if (book.isPremium && provider.isGuest) {
+    if (pBook.isPremium && authProvider.isGuest) {
       PremiumGate.showPremiumSheet(context);
       return;
     }
-    provider.playBook(book);
-    Navigator.push(context, MaterialPageRoute(builder: (_) => AudioPlayerScreen(book: book)));
+    audioProvider.playBook(pBook);
+    Navigator.push(context, FadeThroughPageRoute(page: AudioPlayerScreen(book: pBook)));
   }
 
   Widget _buildActionButtons(BuildContext context) {
@@ -239,12 +278,12 @@ class BookDetailScreen extends StatelessWidget {
           width: double.infinity,
           height: 56,
           child: ElevatedButton.icon(
-            onPressed: () => _handlePlayBook(context, book),
+            onPressed: () => _handlePlayBook(context, widget.book),
             icon: Stack(
               alignment: Alignment.center,
               children: [
                 const Icon(Icons.play_arrow_rounded, color: Colors.white),
-                if (book.isPremium)
+                if (widget.book.isPremium)
                   Positioned(
                     top: -2, right: -4,
                     child: const Icon(Icons.workspace_premium_rounded, color: Color(0xFFF5C518), size: 12),
@@ -252,7 +291,7 @@ class BookDetailScreen extends StatelessWidget {
               ],
             ),
             label: Text(
-              book.isPremium ? 'استمع الآن ✦ مميز' : 'استمع الآن',
+              widget.book.isPremium ? 'استمع الآن ✦ مميز' : 'استمع الآن',
               style: GoogleFonts.notoKufiArabic(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -272,7 +311,7 @@ class BookDetailScreen extends StatelessWidget {
           width: double.infinity,
           height: 56,
           child: OutlinedButton.icon(
-            onPressed: () => _handlePlayBook(context, book),
+            onPressed: () => _handlePlayBook(context, widget.book),
             icon: const Icon(Icons.menu_book_rounded, color: AppColors.newPrimary),
             label: Text(
               'اقرأ الملخص',
@@ -311,14 +350,35 @@ class BookDetailScreen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Text(
-          book.description,
-          style: GoogleFonts.notoKufiArabic(
-            fontSize: 14,
-            height: 1.8,
-            color: isDark ? Colors.grey[300] : Colors.grey[700],
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: Text(
+            widget.book.description,
+            maxLines: _isSummaryExpanded ? null : 3,
+            overflow: _isSummaryExpanded ? TextOverflow.visible : TextOverflow.fade,
+            style: GoogleFonts.notoKufiArabic(
+              fontSize: 14,
+              height: 1.8,
+              color: isDark ? Colors.grey[300] : Colors.grey[700],
+            ),
           ),
         ),
+        if (widget.book.description.length > 150)
+          Center(
+            child: TextButton(
+              onPressed: () => setState(() => _isSummaryExpanded = !_isSummaryExpanded),
+              child: Text(
+                _isSummaryExpanded ? 'عرض أقل ▴' : 'عرض المزيد ▾',
+                style: GoogleFonts.notoKufiArabic(
+                  color: AppColors.newPrimary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

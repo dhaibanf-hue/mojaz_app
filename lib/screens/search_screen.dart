@@ -9,6 +9,9 @@ import '../constants.dart';
 import 'book_detail_screen.dart';
 import 'all_categories_screen.dart';
 import 'category_books_screen.dart';
+import '../widgets/animated_book_card.dart';
+import '../utils/route_transitions.dart';
+import 'package:animations/animations.dart';
 
 class SearchScreen extends StatefulWidget {
   final String? initialQuery;
@@ -23,6 +26,7 @@ class _SearchScreenState extends State<SearchScreen> {
   List<Book> _searchResults = [];
   bool _isSearching = false;
   Timer? _debounce;
+  final List<String> _recentSearches = ['العادات الذرية', 'علم النفس', 'تطوير الذات'];
 
   @override
   void initState() {
@@ -48,7 +52,7 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
-  void _performSearch(String query) {
+  Future<void> _performSearch(String query) async {
     if (query.isEmpty) {
       setState(() {
         _searchResults = [];
@@ -57,18 +61,16 @@ class _SearchScreenState extends State<SearchScreen> {
       return;
     }
 
-    final provider = Provider.of<AppProvider>(context, listen: false);
-    final allBooks = provider.liveBooks.isNotEmpty ? provider.liveBooks : dummyBooks;
+    setState(() => _isSearching = true);
+    
+    final provider = Provider.of<BooksProvider>(context, listen: false);
+    final results = await provider.searchBooks(query);
 
-    setState(() {
-      _isSearching = true;
-      _searchResults = allBooks.where((book) {
-        final q = query.toLowerCase();
-        return book.title.toLowerCase().contains(q) ||
-               book.author.toLowerCase().contains(q) ||
-               book.category.toLowerCase().contains(q);
-      }).toList();
-    });
+    if (mounted) {
+      setState(() {
+        _searchResults = results;
+      });
+    }
   }
 
   void _clearSearch() {
@@ -156,9 +158,20 @@ class _SearchScreenState extends State<SearchScreen> {
 
             // Content
             Expanded(
-              child: _isSearching
-                  ? _buildSearchResults(context, isDark)
-                  : _buildDiscoveryView(context, isDark),
+              child: PageTransitionSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
+                  return FadeThroughTransition(
+                    animation: primaryAnimation,
+                    secondaryAnimation: secondaryAnimation,
+                    fillColor: Colors.transparent,
+                    child: child,
+                  );
+                },
+                child: _isSearching
+                    ? KeyedSubtree(key: const ValueKey('search'), child: _buildSearchResults(context, isDark))
+                    : KeyedSubtree(key: const ValueKey('discover'), child: _buildDiscoveryView(context, isDark)),
+              ),
             ),
           ],
         ),
@@ -172,6 +185,51 @@ class _SearchScreenState extends State<SearchScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Recent Searches Mock
+          if (_recentSearches.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   Text(
+                     'عمليات البحث الأخيرة',
+                     style: GoogleFonts.notoKufiArabic(
+                       fontSize: 16,
+                       fontWeight: FontWeight.bold,
+                       color: isDark ? Colors.white : Colors.black,
+                     ),
+                   ),
+                   const SizedBox(height: 12),
+                   Wrap(
+                     spacing: 8,
+                     runSpacing: 8,
+                     children: _recentSearches.map((term) {
+                       return AnimatedSize(
+                         duration: const Duration(milliseconds: 250),
+                         curve: Curves.easeInOut,
+                         child: InputChip(
+                           label: Text(term, style: const TextStyle(fontSize: 12)),
+                           onDeleted: () {
+                             setState(() {
+                               _recentSearches.remove(term);
+                             });
+                           },
+                           deleteIconColor: Colors.grey[500],
+                           backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey[100],
+                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: isDark ? Colors.white10 : Colors.grey[300]!)),
+                           onPressed: () {
+                             _searchController.text = term;
+                             _performSearch(term);
+                           },
+                         ),
+                       );
+                     }).toList(),
+                   ),
+                ],
+              ),
+            ),
+
           // Categories Grid
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -188,7 +246,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
                 TextButton(
                   onPressed: () {
-                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AllCategoriesScreen()));
+                     Navigator.push(context, FadeThroughPageRoute(page: const AllCategoriesScreen()));
                   },
                   child: Text(
                     'عرض الكل',
@@ -236,7 +294,7 @@ class _SearchScreenState extends State<SearchScreen> {
           const SizedBox(height: 16),
           SizedBox(
             height: 260,
-            child: Consumer<AppProvider>(
+            child: Consumer<BooksProvider>(
               builder: (context, provider, child) {
                 final books = provider.liveBooks.isNotEmpty ? provider.liveBooks.take(5).toList() : dummyBooks.take(3).toList();
                 return ListView.builder(
@@ -270,7 +328,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Consumer<AppProvider>(
+          Consumer<BooksProvider>(
             builder: (context, provider, child) {
               final books = provider.liveBooks.isNotEmpty ? provider.liveBooks.reversed.take(4).toList() : dummyBooks;
               return ListView.separated(
@@ -342,10 +400,10 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildCategoryBtn(BuildContext context, String title, IconData icon, bool isDark) {
     return InkWell(
       onTap: () {
-        final provider = Provider.of<AppProvider>(context, listen: false);
+        final provider = Provider.of<BooksProvider>(context, listen: false);
         final allBooks = provider.liveBooks.isNotEmpty ? provider.liveBooks : dummyBooks;
         final filtered = allBooks.where((b) => b.category.contains(title) || title.contains(b.category)).toList();
-        Navigator.push(context, MaterialPageRoute(builder: (_) => CategoryBooksScreen(categoryName: title, books: filtered.isEmpty ? allBooks : filtered)));
+        Navigator.push(context, FadeThroughPageRoute(page: CategoryBooksScreen(categoryName: title, books: filtered.isEmpty ? allBooks : filtered)));
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
@@ -374,156 +432,168 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildTrendingBook(BuildContext context, Book book, bool isDark) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailScreen(book: book)));
-      },
-      child: Container(
-        width: 140,
-        margin: const EdgeInsets.only(left: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: CachedNetworkImage(
-                    imageUrl: book.cover,
-                    height: 180,
-                    width: 140,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(color: Colors.grey[200]),
-                  ),
-                ),
-                Positioned(
-                  bottom: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.headset_rounded, color: Colors.white, size: 12),
-                        const SizedBox(width: 4),
-                        const Text('18 د', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
-                )
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              book.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.notoKufiArabic(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                height: 1.3,
-                color: isDark ? Colors.white : Colors.black,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              book.author,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.notoKufiArabic(
-                fontSize: 11,
-                color: Colors.grey[500],
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              book.category,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.notoKufiArabic(
-                fontSize: 10,
-                color: AppColors.newPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNewBookItem(BuildContext context, Book book, bool isDark) {
-    return InkWell(
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailScreen(book: book)));
-      },
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.grey[50],
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isDark ? Colors.white10 : Colors.grey[100]!),
-        ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: CachedNetworkImage(
-                imageUrl: book.cover,
-                width: 54,
-                height: 76,
-                fit: BoxFit.cover,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
+    return SizedBox(
+      width: 140,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 16),
+        child: AnimatedBookCard(
+          book: book,
+          heroTag: 'trending-${book.id}',
+          closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          cardBuilder: (context, openContainer) {
+            return GestureDetector(
+              onTap: openContainer,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: CachedNetworkImage(
+                          imageUrl: book.cover,
+                          height: 180,
+                          width: 140,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(color: Colors.grey[200]),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 8,
+                        left: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.headset_rounded, color: Colors.white, size: 12),
+                              const SizedBox(width: 4),
+                              const Text('18 د', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   Text(
                     book.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.notoKufiArabic(
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: FontWeight.bold,
+                      height: 1.3,
                       color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     book.author,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.notoKufiArabic(
                       fontSize: 11,
                       color: Colors.grey[500],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.schedule, size: 14, color: AppColors.newPrimary.withValues(alpha: 0.6)),
-                      const SizedBox(width: 4),
-                      Text('15 دقيقة', style: GoogleFonts.manrope(fontSize: 10, color: Colors.grey[400], fontWeight: FontWeight.bold)),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppColors.newPrimary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(book.category, style: GoogleFonts.manrope(color: AppColors.newPrimary, fontSize: 10, fontWeight: FontWeight.w900)),
-                      ),
-                    ],
-                  )
+                  const SizedBox(height: 2),
+                  Text(
+                    book.category,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.notoKufiArabic(
+                      fontSize: 10,
+                      color: AppColors.newPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
-            ),
-          ],
+            );
+          },
         ),
       ),
+    );
+  }
+
+  Widget _buildNewBookItem(BuildContext context, Book book, bool isDark) {
+    return AnimatedBookCard(
+      book: book,
+      heroTag: 'new-${book.id}',
+      closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      cardBuilder: (context, openContainer) {
+        return InkWell(
+          onTap: openContainer,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.grey[50],
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: isDark ? Colors.white10 : Colors.grey[100]!),
+            ),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: CachedNetworkImage(
+                    imageUrl: book.cover,
+                    width: 54,
+                    height: 76,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        book.title,
+                        style: GoogleFonts.notoKufiArabic(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        book.author,
+                        style: GoogleFonts.notoKufiArabic(
+                          fontSize: 11,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.schedule, size: 14, color: AppColors.newPrimary.withValues(alpha: 0.6)),
+                          const SizedBox(width: 4),
+                          Text('15 دقيقة', style: GoogleFonts.manrope(fontSize: 10, color: Colors.grey[400], fontWeight: FontWeight.bold)),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.newPrimary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(book.category, style: GoogleFonts.manrope(color: AppColors.newPrimary, fontSize: 10, fontWeight: FontWeight.w900)),
+                          ),
+                        ],
+                      )
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

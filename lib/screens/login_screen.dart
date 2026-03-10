@@ -80,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (mounted && res.user != null) {
-        final provider = Provider.of<AppProvider>(context, listen: false);
+        final provider = Provider.of<AuthProvider>(context, listen: false);
         provider.loginAsUser(
           res.user!.userMetadata?['full_name'] ?? _emailController.text.split('@')[0],
           res.user!.email ?? _emailController.text,
@@ -109,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _continueAsGuest() {
-     final provider = Provider.of<AppProvider>(context, listen: false);
+     final provider = Provider.of<AuthProvider>(context, listen: false);
      provider.loginAsUser('ضيف', 'guest@moujaz.app');
      Navigator.pushReplacement(
        context,

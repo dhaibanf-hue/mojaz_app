@@ -5,6 +5,7 @@ import '../constants.dart';
 import '../models/book.dart';
 import '../providers/app_provider.dart';
 import 'category_books_screen.dart'; // Import to navigate to category list
+import '../utils/route_transitions.dart';
 
 class AllCategoriesScreen extends StatefulWidget {
   const AllCategoriesScreen({super.key});
@@ -32,7 +33,7 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
   @override
   Widget build(BuildContext context) {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final provider = Provider.of<AppProvider>(context);
+    final provider = Provider.of<BooksProvider>(context);
     final allBooks = provider.liveBooks.isNotEmpty ? provider.liveBooks : dummyBooks;
     
     final filteredCategories = _searchQuery.isEmpty 
@@ -224,8 +225,8 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => CategoryBooksScreen(
+          FadeThroughPageRoute(
+            page: CategoryBooksScreen(
               categoryName: cat.name,
               books: booksToShow,
             ),

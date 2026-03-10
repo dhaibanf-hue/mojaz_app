@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../constants.dart';
 // Just using logic for flow, next is actually daily_commitment in design
 import 'daily_commitment_screen.dart';
+import '../../utils/route_transitions.dart';
 
 class LearningStyleScreen extends StatefulWidget {
   const LearningStyleScreen({super.key});
@@ -16,7 +17,7 @@ class _LearningStyleScreenState extends State<LearningStyleScreen> {
   void _next() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const DailyCommitmentScreen()),
+      FadeThroughPageRoute(page: const DailyCommitmentScreen()),
     );
   }
 

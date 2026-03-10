@@ -9,6 +9,8 @@ import 'search_screen.dart';
 import '../models/book.dart';
 import 'audio_player_screen.dart';
 import 'profile_screen.dart';
+import '../widgets/animated_book_card.dart';
+import '../utils/route_transitions.dart';
 
 
 class HomeV2Screen extends StatelessWidget {
@@ -17,7 +19,7 @@ class HomeV2Screen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final provider = Provider.of<AppProvider>(context);
+    final provider = Provider.of<BooksProvider>(context);
     final displayBooks = provider.liveBooks.isNotEmpty ? provider.liveBooks : dummyBooks;
     
     // Ensure we have books to show
@@ -67,7 +69,7 @@ class HomeV2Screen extends StatelessWidget {
                               TextButton(
                                 onPressed: () {
                                    // Navigate to all books or categories
-                                   Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen()));
+                                   Navigator.push(context, FadeThroughPageRoute(page: const SearchScreen()));
                                 },
                                 child: Text(
                                   'عرض الكل',
@@ -116,8 +118,8 @@ class HomeV2Screen extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context, bool isDark) {
-    final provider = Provider.of<AppProvider>(context);
-    final userName = provider.userName;
+    final authProvider = Provider.of<AuthProvider>(context);
+    final userName = authProvider.userName;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       child: Row(
@@ -147,7 +149,7 @@ class HomeV2Screen extends StatelessWidget {
             ],
           ),
           GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
+            onTap: () => Navigator.push(context, FadeThroughPageRoute(page: const ProfileScreen())),
             child: Container(
               width: 44,
               height: 44,
@@ -192,111 +194,109 @@ class HomeV2Screen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           
-          InkWell(
-            onTap: () {
-               Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailScreen(book: book, heroTag: 'featured-${book.id}')));
-            },
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  )
-                ],
-              ),
-              child: Column(
-                 children: [
-                   // Image Stack
-                   Stack(
+          AnimatedBookCard(
+            book: book,
+            heroTag: 'featured-${book.id}',
+            closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            cardBuilder: (context, openContainer) {
+              return GestureDetector(
+                onTap: openContainer,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      )
+                    ],
+                  ),
+                  child: Column(
                      children: [
-                        AspectRatio(
-                          aspectRatio: 4/5,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: CachedNetworkImage(
-                              imageUrl: book.cover,
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => Container(color: Colors.grey[200]),
-                            ),
-                          ),
-                        ),
-                        // Gradient Overlay
-                        Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.transparent,
-                                  Colors.black.withValues(alpha: 0.8),
-                                ],
-                                stops: const [0.5, 1.0],
+                       // Image Stack
+                       Stack(
+                         children: [
+                            AspectRatio(
+                              aspectRatio: 4/5,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(20),
+                                child: CachedNetworkImage(
+                                  imageUrl: book.cover,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(color: Colors.grey[200]),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        // Content Overlay
-                        Positioned(
-                          bottom: 24,
-                          right: 24,
-                          left: 24,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            // Gradient Overlay
+                            Positioned.fill(
+                              child: Container(
                                 decoration: BoxDecoration(
-                                  color: AppColors.newPrimary,
                                   borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  book.category,
-                                  style: GoogleFonts.notoKufiArabic(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.black.withValues(alpha: 0.8),
+                                    ],
+                                    stops: const [0.5, 1.0],
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 12),
-                              Text(
-                                book.title,
-                                style: GoogleFonts.notoKufiArabic(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
+                            ),
+                            // Content Overlay
+                            Positioned(
+                              bottom: 24,
+                              right: 24,
+                              left: 24,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.newPrimary,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      book.category,
+                                      style: GoogleFonts.notoKufiArabic(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    book.title,
+                                    style: GoogleFonts.notoKufiArabic(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    book.subtitle ?? 'كيف تنجز أكثر في وقت أقل',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.notoKufiArabic(
+                                      fontSize: 14,
+                                      color: Colors.white.withValues(alpha: 0.8),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                book.subtitle ?? 'كيف تنجز أكثر في وقت أقل', // Fallback subtitle or description
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.notoKufiArabic(
-                                  fontSize: 14,
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                            ),
+                         ],
+                       ),
                      ],
-                   ),
-                   
-                   // Info Bar below image (Design shows inside image area or separate? 
-                   // The design shows it BELOW the image but visually integrated or separate? 
-                   // Looking at the HTML, it's separate below "aspect-[4/5]" block? 
-                   // Ah, the HTML shows "flex items-center justify-between" BELOW the image container in the "flex flex-col gap-6"
-                   // Let's replicate that structure.
-                 ],
-              ),
-            ),
+                  ),
+                ),
+              );
+            },
           ),
           
           const SizedBox(height: 16),
@@ -315,9 +315,9 @@ class HomeV2Screen extends StatelessWidget {
                GestureDetector(
                  onTap: () {
                    // Play button: open AudioPlayerScreen directly
-                   final appProvider = Provider.of<AppProvider>(context, listen: false);
-                   appProvider.playBook(book);
-                   Navigator.push(context, MaterialPageRoute(builder: (_) => AudioPlayerScreen(book: book)));
+                    final audioProvider = Provider.of<AudioPlayerProvider>(context, listen: false);
+                    audioProvider.playBook(book);
+                   Navigator.push(context, FadeThroughPageRoute(page: AudioPlayerScreen(book: book)));
                  },
                  child: Container(
                    width: 48,
@@ -368,87 +368,94 @@ class HomeV2Screen extends StatelessWidget {
   }
 
   Widget _buildBookItem(BuildContext context, Book book, bool isDark) {
-     return InkWell(
-       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailScreen(book: book, heroTag: 'list-${book.id}'))),
-       borderRadius: BorderRadius.circular(16),
-       child: Row(
-         children: [
-            // Cover
-            Container(
-              width: 80,
-              height: 110,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 4))],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: CachedNetworkImage(
-                  imageUrl: book.cover,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(color: Colors.grey[200]),
+     return AnimatedBookCard(
+       book: book,
+       heroTag: 'list-${book.id}',
+       closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+       cardBuilder: (context, openContainer) {
+         return InkWell(
+           onTap: openContainer,
+           borderRadius: BorderRadius.circular(16),
+           child: Row(
+             children: [
+                // Cover
+                Container(
+                  width: 80,
+                  height: 110,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 4))],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: CachedNetworkImage(
+                      imageUrl: book.cover,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(color: Colors.grey[200]),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            
-            // Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    book.category,
-                    style: GoogleFonts.notoKufiArabic(
-                       fontSize: 10,
-                       fontWeight: FontWeight.bold,
-                       color: AppColors.newPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    book.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.notoKufiArabic(
-                       fontSize: 16,
-                       fontWeight: FontWeight.bold,
-                       color: isDark ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    book.author,
-                    style: GoogleFonts.notoKufiArabic(
-                       fontSize: 12,
-                       color: Colors.grey[500],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  
-                  // Metadata Icons
-                  Row(
+                const SizedBox(width: 16),
+                
+                // Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.access_time_rounded, size: 14, color: Colors.grey[400]),
-                      const SizedBox(width: 4),
-                      Text("15 دقيقة", style: GoogleFonts.notoKufiArabic(fontSize: 10, color: Colors.grey[400], fontWeight: FontWeight.bold)),
-                      const SizedBox(width: 12),
-                      Icon(Icons.headset_rounded, size: 14, color: Colors.grey[400]),
-                      const SizedBox(width: 4),
-                      Text("4.8 ك", style: GoogleFonts.notoKufiArabic(fontSize: 10, color: Colors.grey[400], fontWeight: FontWeight.bold)),
+                      Text(
+                        book.category,
+                        style: GoogleFonts.notoKufiArabic(
+                           fontSize: 10,
+                           fontWeight: FontWeight.bold,
+                           color: AppColors.newPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        book.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.notoKufiArabic(
+                           fontSize: 16,
+                           fontWeight: FontWeight.bold,
+                           color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        book.author,
+                        style: GoogleFonts.notoKufiArabic(
+                           fontSize: 12,
+                           color: Colors.grey[500],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      // Metadata Icons
+                      Row(
+                        children: [
+                          Icon(Icons.access_time_rounded, size: 14, color: Colors.grey[400]),
+                          const SizedBox(width: 4),
+                          Text("15 دقيقة", style: GoogleFonts.notoKufiArabic(fontSize: 10, color: Colors.grey[400], fontWeight: FontWeight.bold)),
+                          const SizedBox(width: 12),
+                          Icon(Icons.headset_rounded, size: 14, color: Colors.grey[400]),
+                          const SizedBox(width: 4),
+                          Text("4.8 ك", style: GoogleFonts.notoKufiArabic(fontSize: 10, color: Colors.grey[400], fontWeight: FontWeight.bold)),
+                        ],
+                      ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            
-            // Action
-            IconButton(
-              icon: Icon(Icons.more_vert_rounded, color: Colors.grey[400]),
-              onPressed: () {},
-            ),
-         ],
-       ),
+                ),
+                
+                // Action
+                IconButton(
+                  icon: Icon(Icons.more_vert_rounded, color: Colors.grey[400]),
+                  onPressed: () {},
+                ),
+             ],
+           ),
+         );
+       },
      );
   }
 
@@ -472,7 +479,7 @@ class HomeV2Screen extends StatelessWidget {
   }
 
   Widget _buildMiniPlayer(BuildContext context, bool isDark) {
-    return Consumer<AppProvider>(
+    return Consumer<AudioPlayerProvider>(
       builder: (context, provider, child) {
         if (!provider.showMiniPlayer || provider.currentPlayingBook == null) {
           return const SizedBox.shrink();
@@ -482,7 +489,7 @@ class HomeV2Screen extends StatelessWidget {
           onTap: () {
             Navigator.push(
               context, 
-              MaterialPageRoute(builder: (_) => AudioPlayerScreen(book: currentBook))
+              FadeThroughPageRoute(page: AudioPlayerScreen(book: currentBook))
             );
           },
           child: Container(

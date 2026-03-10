@@ -68,11 +68,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (mounted && res.user != null) {
-        final provider = Provider.of<AppProvider>(context, listen: false);
+        final provider = Provider.of<AuthProvider>(context, listen: false);
         provider.loginAsUser(
           _nameController.text.trim(),
           res.user!.email ?? _emailController.text,
-          password: _passwordController.text,
+          phone: _phoneController.text.trim(),
         );
 
         Navigator.of(context).pushAndRemoveUntil(
@@ -98,7 +98,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _continueAsGuest() {
-     final provider = Provider.of<AppProvider>(context, listen: false);
+     final provider = Provider.of<AuthProvider>(context, listen: false);
      provider.logout(); // Ensure guest mode
      Navigator.pushReplacement(
        context,

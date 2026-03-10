@@ -4,14 +4,17 @@ import 'package:provider/provider.dart';
 import '../constants.dart';
 import '../providers/app_provider.dart';
 import 'edit_profile_screen.dart';
+import '../utils/route_transitions.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<AppProvider>(context);
-    final isDark = provider.isDarkMode;
+    final authProvider = Provider.of<AuthProvider>(context);
+    final booksProvider = Provider.of<BooksProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.newBackgroundDark : AppColors.newBackgroundLight,
@@ -22,10 +25,10 @@ class ProfileScreen extends StatelessWidget {
           child: Column(
             children: [
               // Header & Profile Card
-              _buildModernHeader(context, provider, isDark),
+               _buildModernHeader(context, authProvider, isDark),
               
               // Gamified Rank Card
-              _buildRankCard(context, provider, isDark),
+              _buildRankCard(context, authProvider, isDark),
 
               // Stats Section
               Padding(
@@ -44,9 +47,9 @@ class ProfileScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        _buildStatCard(context, '${provider.completedBookIds.length}', 'ملخصات منجزة', Icons.check_circle_rounded, isDark),
+                        _buildStatCard(context, '${booksProvider.completedBookIds.length}', 'ملخصات منجزة', Icons.check_circle_rounded, isDark),
                         const SizedBox(width: 12),
-                        _buildStatCard(context, '${provider.totalListeningMinutes}', 'دقيقة استماع', Icons.timer_rounded, isDark),
+                        _buildStatCard(context, '${booksProvider.totalListeningMinutes}', 'دقيقة استماع', Icons.timer_rounded, isDark),
                       ],
                     ),
                   ],
@@ -57,12 +60,12 @@ class ProfileScreen extends StatelessWidget {
               _buildAchievementsSection(context, isDark),
 
               // Menu Options
-              _buildMenuSection(context, provider, isDark),
+              _buildMenuSection(context, themeProvider, isDark),
               
               const SizedBox(height: 32),
               
               // Logout Button
-              _buildLogoutButton(context, provider, isDark),
+              _buildLogoutButton(context, authProvider, isDark),
             ],
           ),
         ),
@@ -70,7 +73,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildModernHeader(BuildContext context, AppProvider provider, bool isDark) {
+  Widget _buildModernHeader(BuildContext context, AuthProvider provider, bool isDark) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Row(
@@ -105,14 +108,14 @@ class ProfileScreen extends StatelessWidget {
           ),
           IconButton(
             icon: Icon(Icons.edit_note_rounded, color: AppColors.newPrimary),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen())),
+            onPressed: () => Navigator.push(context, FadeThroughPageRoute(page: const EditProfileScreen())),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRankCard(BuildContext context, AppProvider provider, bool isDark) {
+  Widget _buildRankCard(BuildContext context, AuthProvider provider, bool isDark) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.all(20),
@@ -308,7 +311,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuSection(BuildContext context, AppProvider provider, bool isDark) {
+  Widget _buildMenuSection(BuildContext context, ThemeProvider provider, bool isDark) {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -363,7 +366,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLogoutButton(BuildContext context, AppProvider provider, bool isDark) {
+  Widget _buildLogoutButton(BuildContext context, AuthProvider provider, bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: TextButton.icon(

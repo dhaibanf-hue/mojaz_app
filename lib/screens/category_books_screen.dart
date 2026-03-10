@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/book.dart';
 import 'book_detail_screen.dart';
+import '../widgets/animated_book_card.dart';
 
 class CategoryBooksScreen extends StatelessWidget {
   final String categoryName;
@@ -50,85 +51,87 @@ class CategoryBooksScreen extends StatelessWidget {
   }
 
   Widget _buildBookCard(BuildContext context, Book book, bool isDark) {
-    return InkWell(
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailScreen(book: book, heroTag: 'cat-${book.id}')));
-      },
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+    return AnimatedBookCard(
+      book: book,
+      heroTag: 'cat-${book.id}',
+      closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      cardBuilder: (context, openContainer) {
+        return InkWell(
+          onTap: openContainer,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-             BoxShadow(
-               color: Colors.black.withValues(alpha: 0.05),
-               blurRadius: 10,
-               offset: const Offset(0, 4),
-             )
-          ],
-        ),
-        child: Row(
-          children: [
-            Hero(
-              tag: 'cat-${book.id}',
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: CachedNetworkImage(
-                  imageUrl: book.cover,
-                  width: 60,
-                  height: 90,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(color: Colors.grey[200]),
-                  errorWidget: (context, url, error) => const Icon(Icons.broken_image),
-                ),
-              ),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                 BoxShadow(
+                   color: Colors.black.withValues(alpha: 0.05),
+                   blurRadius: 10,
+                   offset: const Offset(0, 4),
+                 )
+              ],
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    book.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.manrope(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: CachedNetworkImage(
+                    imageUrl: book.cover,
+                    width: 60,
+                    height: 90,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(color: Colors.grey[200]),
+                    errorWidget: (context, url, error) => const Icon(Icons.broken_image),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    book.author,
-                    style: GoogleFonts.manrope(
-                      fontSize: 12,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.star_rounded, size: 14, color: Colors.amber[600]),
-                      const SizedBox(width: 4),
                       Text(
-                        book.rating.toString(),
-                        style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black54),
+                        book.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.manrope(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
                       ),
-                      const SizedBox(width: 12),
-                      Icon(Icons.access_time_rounded, size: 14, color: Colors.grey[400]),
-                      const SizedBox(width: 4),
-                      Text("15 دقيقة", style: GoogleFonts.manrope(fontSize: 10, color: Colors.grey[400])),
+                      const SizedBox(height: 4),
+                      Text(
+                        book.author,
+                        style: GoogleFonts.manrope(
+                          fontSize: 12,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.star_rounded, size: 14, color: Colors.amber[600]),
+                          const SizedBox(width: 4),
+                          Text(
+                            book.rating.toString(),
+                            style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black54),
+                          ),
+                          const SizedBox(width: 12),
+                          Icon(Icons.access_time_rounded, size: 14, color: Colors.grey[400]),
+                          const SizedBox(width: 4),
+                          Text("دقيقة 15", style: GoogleFonts.manrope(fontSize: 10, color: Colors.grey[400])),
+                        ],
+                      ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                Icon(Icons.chevron_left_rounded, color: Colors.grey[400]),
+              ],
             ),
-            Icon(Icons.chevron_left_rounded, color: Colors.grey[400]), // Arabic RTL arrow is LEFT
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

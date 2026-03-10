@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../constants.dart';
+import '../../utils/route_transitions.dart';
 
 class DailyCommitmentScreen extends StatefulWidget {
   const DailyCommitmentScreen({super.key});
@@ -160,7 +161,7 @@ class _DailyCommitmentScreenState extends State<DailyCommitmentScreen> {
                     // Navigate to loading/plan creation screen
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const LoadingPlanScreen()),
+                      FadeThroughPageRoute(page: const LoadingPlanScreen()),
                     );
                   },
                   style: ElevatedButton.styleFrom(

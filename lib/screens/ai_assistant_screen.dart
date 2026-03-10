@@ -27,6 +27,12 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     _scrollController.dispose();
@@ -35,7 +41,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<AppProvider>(context);
+    final provider = Provider.of<AudioPlayerProvider>(context);
 
     return Scaffold(
       appBar: AppBar(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../constants.dart';
 import 'learning_style_screen.dart'; // Next Screen
+import '../../utils/route_transitions.dart';
 
 class CuriosityFieldsScreen extends StatefulWidget {
   const CuriosityFieldsScreen({super.key});
@@ -42,7 +43,7 @@ class _CuriosityFieldsScreenState extends State<CuriosityFieldsScreen> {
 
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const LearningStyleScreen()),
+        FadeThroughPageRoute(page: const LearningStyleScreen()),
       );
   }
 

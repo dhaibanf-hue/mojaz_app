@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../constants.dart';
 import '../providers/app_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -15,7 +16,7 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _nameController;
   late TextEditingController _emailController;
-  final TextEditingController _phoneController = TextEditingController(text: "+966 50 123 4567");
+  late TextEditingController _phoneController;
   final TextEditingController _currentPassController = TextEditingController();
   final TextEditingController _newPassController = TextEditingController();
   bool _obscureCurrent = true;
@@ -24,9 +25,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    final provider = Provider.of<AppProvider>(context, listen: false);
+    final provider = Provider.of<AuthProvider>(context, listen: false);
     _nameController = TextEditingController(text: provider.userName);
     _emailController = TextEditingController(text: provider.userEmail);
+    _phoneController = TextEditingController(text: provider.userPhone);
   }
 
   @override
@@ -151,21 +153,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               child: ElevatedButton.icon(
                 onPressed: () {
                    // Save logic: update AppProvider immediately
-                   final provider = Provider.of<AppProvider>(context, listen: false);
-                   provider.loginAsUser(
-                     _nameController.text.trim(),
-                     _emailController.text.trim(),
-                     password: _newPassController.text.isNotEmpty
-                         ? _newPassController.text
-                         : provider.userPassword,
-                   );
-                   ScaffoldMessenger.of(context).showSnackBar(
-                     const SnackBar(
-                       content: Text('تم حفظ التغييرات بنجاح'),
-                       behavior: SnackBarBehavior.floating,
-                     ),
-                   );
-                   Navigator.pop(context);
+                    final provider = Provider.of<AuthProvider>(context, listen: false);
+                    provider.updateUserData(
+                      name: _nameController.text.trim(),
+                      phone: _phoneController.text.trim(),
+                    );
+                    
+                    if (_newPassController.text.isNotEmpty) {
+                      // Logic for password update if needed
+                      Supabase.instance.client.auth.updateUser(
+                        UserAttributes(password: _newPassController.text.trim())
+                      ).then((_) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تحديث كلمة المرور')));
+                        }
+                      });
+                    }
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('تم حفظ التغييرات بنجاح'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    Navigator.pop(context);
                 },
                 icon: const Icon(Icons.check_circle_outline_rounded, color: Colors.white),
                 label: Text('حفظ التغييرات', style: GoogleFonts.notoKufiArabic(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),

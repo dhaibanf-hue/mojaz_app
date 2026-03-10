@@ -47,7 +47,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final provider = Provider.of<AppProvider>(context);
+    final provider = Provider.of<BooksProvider>(context);
 
     // Filtering Logic (Synced with Provider)
     final allBooks = provider.liveBooks.isNotEmpty ? provider.liveBooks : dummyBooks;
@@ -169,7 +169,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
     );
   }
 
-  Widget _getTabContent(int index, List<Book> inProgress, List<Book> completed, List<Book> downloaded, List<Book> favorites, AppProvider provider, bool isDark) {
+  Widget _getTabContent(int index, List<Book> inProgress, List<Book> completed, List<Book> downloaded, List<Book> favorites, BooksProvider provider, bool isDark) {
     switch (index) {
       case 0: return _buildList(inProgress, 'reading', provider, isDark);
       case 1: return _buildList(completed, 'done', provider, isDark);
@@ -223,7 +223,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildList(List<Book> books, String type, AppProvider provider, bool isDark) {
+  Widget _buildList(List<Book> books, String type, BooksProvider provider, bool isDark) {
     if (books.isEmpty) {
       return Center(
         child: Column(
@@ -319,7 +319,10 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
                                // Quick Actions
                                IconButton(
                                  icon: Icon(Icons.play_circle_fill_rounded, color: AppColors.newPrimary, size: 28),
-                                 onPressed: () => provider.playBook(book),
+                                 onPressed: () {
+                                 final audioProvider = Provider.of<AudioPlayerProvider>(context, listen: false);
+                                 audioProvider.playBook(book);
+                               },
                                  padding: EdgeInsets.zero,
                                  constraints: const BoxConstraints(),
                                ),

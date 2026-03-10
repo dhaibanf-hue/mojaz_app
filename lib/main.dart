@@ -4,7 +4,10 @@ import 'screens/welcome_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'screens/onboarding_screen.dart';
-import 'providers/app_provider.dart';
+import 'providers/auth_provider.dart';
+import 'providers/books_provider.dart';
+import 'providers/audio_player_provider.dart';
+import 'providers/theme_provider.dart';
 import 'theme.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -26,9 +29,22 @@ void main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
 
+  final authProvider = AuthProvider();
+  final booksProvider = BooksProvider();
+
+  // Connect points callback: when a book is completed, award points via AuthProvider
+  booksProvider.onPointsAwarded = (int points) {
+    authProvider.updatePoints(points);
+  };
+
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => AppProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: authProvider),
+        ChangeNotifierProvider.value(value: booksProvider),
+        ChangeNotifierProvider(create: (_) => AudioPlayerProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ],
       child: const MyApp(),
     ),
   );
@@ -39,14 +55,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appProvider = Provider.of<AppProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
 
     return MaterialApp(
       title: 'Moujaz',
       debugShowCheckedModeBanner: false,
-      themeMode: appProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      theme: getLightThemeProvider(appProvider.isModernDesign),
-      darkTheme: getDarkThemeProvider(appProvider.isModernDesign),
+      themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      theme: getLightThemeProvider(themeProvider.isModernDesign),
+      darkTheme: getDarkThemeProvider(themeProvider.isModernDesign),
+      themeAnimationDuration: const Duration(milliseconds: 380),
+      themeAnimationCurve: Curves.easeInOut,
       builder: (context, child) {
         return Directionality(
           textDirection: TextDirection.rtl,

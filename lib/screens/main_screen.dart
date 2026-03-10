@@ -7,7 +7,9 @@ import 'search_screen.dart';
 import 'library_screen.dart';
 import 'profile_screen.dart';
 import 'audio_player_screen.dart';
+import 'ai_assistant_screen.dart';
 import '../providers/app_provider.dart';
+import '../utils/route_transitions.dart';
 import '../constants.dart';
 import 'package:flutter/services.dart';
 import 'package:animations/animations.dart';
@@ -30,17 +32,16 @@ class _MainScreenState extends State<MainScreen> {
   @override
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<AppProvider>(context);
-    final isDark = provider.isDarkMode;
-    // Dummy active book for mini player demo
-    final activeBook = provider.liveBooks.isNotEmpty ? provider.liveBooks.first : dummyBooks.first;
+    final booksProvider = Provider.of<BooksProvider>(context);
+    final audioProvider = Provider.of<AudioPlayerProvider>(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
-        if (provider.currentMainTabIndex != 0) {
-          provider.setMainTab(0);
+        if (booksProvider.currentMainTabIndex != 0) {
+          booksProvider.setMainTab(0);
           return;
         }
         final shouldPop = await _showExitDialog(context);
@@ -55,7 +56,7 @@ class _MainScreenState extends State<MainScreen> {
             // Main Content
             AnimatedPadding(
               duration: const Duration(milliseconds: 300),
-              padding: EdgeInsets.only(bottom: provider.showMiniPlayer ? 140 : 80), 
+              padding: EdgeInsets.only(bottom: audioProvider.showMiniPlayer ? 140 : 80), 
               child: PageTransitionSwitcher(
                 duration: const Duration(milliseconds: 300),
                 transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
@@ -66,8 +67,8 @@ class _MainScreenState extends State<MainScreen> {
                   );
                 },
                 child: KeyedSubtree(
-                  key: ValueKey<int>(provider.currentMainTabIndex),
-                  child: _screens[provider.currentMainTabIndex],
+                  key: ValueKey<int>(booksProvider.currentMainTabIndex),
+                  child: _screens[booksProvider.currentMainTabIndex],
                 ),
               ),
             ),
@@ -81,27 +82,46 @@ class _MainScreenState extends State<MainScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Real-time Mini Player
-                  if (provider.showMiniPlayer && provider.currentPlayingBook != null)
-                    _buildMiniPlayer(context, isDark, provider),
+                  if (audioProvider.showMiniPlayer && audioProvider.currentPlayingBook != null)
+                    _buildMiniPlayer(context, isDark, audioProvider, booksProvider),
                   
                   // Bottom Nav
-                  _buildCustomNavBar(context, isDark, provider),
+                  _buildCustomNavBar(context, isDark, booksProvider),
                 ],
               ),
             ),
+            
+            // AI Assistant FAB
+            if (booksProvider.currentMainTabIndex == 0)
+              Positioned(
+                left: 24,
+                bottom: audioProvider.showMiniPlayer ? 170 : 90,
+                child: FloatingActionButton(
+                  heroTag: 'ai_fab',
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      FadeThroughPageRoute(page: const AiAssistantScreen()),
+                    );
+                  },
+                  backgroundColor: AppColors.newPrimary,
+                  elevation: 6,
+                  child: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMiniPlayer(BuildContext context, bool isDark, AppProvider provider) {
-    final book = provider.currentPlayingBook!;
+  Widget _buildMiniPlayer(BuildContext context, bool isDark, AudioPlayerProvider audioProvider, BooksProvider booksProvider) {
+    final book = audioProvider.currentPlayingBook!;
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => AudioPlayerScreen(book: book))
+          FadeThroughPageRoute(page: AudioPlayerScreen(book: book))
         );
       },
       child: Container(
@@ -151,7 +171,9 @@ class _MainScreenState extends State<MainScreen> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(2),
                     child: LinearProgressIndicator(
-                      value: 0.45, // Example progress
+                      value: audioProvider.currentDuration.inSeconds > 0 
+                          ? audioProvider.currentPosition.inSeconds / audioProvider.currentDuration.inSeconds 
+                          : 0.0,
                       minHeight: 4,
                       backgroundColor: isDark ? Colors.white10 : Colors.grey[100],
                       valueColor: const AlwaysStoppedAnimation<Color>(AppColors.newPrimary),
@@ -160,21 +182,49 @@ class _MainScreenState extends State<MainScreen> {
                 ],
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 8),
             // Controls
             Row(
               children: [
-                // Stop/Close Square Button
+                // Speed Button
+                TextButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('التحكم في السرعة متاح في المشغل الكامل'), duration: Duration(seconds: 1)));
+                  },
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(30, 30),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    '1.0x',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white38 : Colors.grey[600],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Next Button
                 IconButton(
-                  icon: Icon(Icons.stop_rounded, color: isDark ? Colors.white38 : Colors.grey[400]),
-                  onPressed: () => provider.stopPlayback(),
+                  icon: Icon(Icons.skip_next_rounded, color: isDark ? Colors.white38 : Colors.grey[500], size: 20),
+                  onPressed: () {
+                    final allBooks = booksProvider.liveBooks;
+                    if (allBooks.isNotEmpty) {
+                      final currentIndex = allBooks.indexWhere((b) => b.id == book.id);
+                      final nextIndex = (currentIndex + 1) % allBooks.length;
+                      audioProvider.playBook(allBooks[nextIndex]);
+                    }
+                  },
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
+                  visualDensity: VisualDensity.compact,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 // Play/Pause Circle
                 GestureDetector(
-                  onTap: () => provider.togglePlayPause(),
+                  onTap: () => audioProvider.togglePlayPause(),
                   child: Container(
                     width: 38,
                     height: 38,
@@ -183,7 +233,7 @@ class _MainScreenState extends State<MainScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      provider.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      audioProvider.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                       color: Colors.white,
                       size: 22,
                     ),
@@ -197,12 +247,12 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildCustomNavBar(BuildContext context, bool isDark, AppProvider provider) {
+  Widget _buildCustomNavBar(BuildContext context, bool isDark, BooksProvider booksProvider) {
     return ClipRRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 30), // Extra bottom padding for home indicator
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 30),
           decoration: BoxDecoration(
             color: (isDark ? const Color(0xFF121212) : Colors.white).withValues(alpha: 0.85),
             border: Border(top: BorderSide(color: isDark ? Colors.white10 : Colors.grey[200]!)),
@@ -210,10 +260,10 @@ class _MainScreenState extends State<MainScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildNavBarItem(provider, 0, Icons.home_rounded, 'الرئيسية'),
-              _buildNavBarItem(provider, 1, Icons.search_rounded, 'البحث'),
-              _buildNavBarItem(provider, 2, Icons.auto_stories_rounded, 'مكتبتي'),
-              _buildNavBarItem(provider, 3, Icons.person_outline_rounded, 'حسابي'),
+              _buildNavBarItem(booksProvider, 0, Icons.home_rounded, 'الرئيسية'),
+              _buildNavBarItem(booksProvider, 1, Icons.search_rounded, 'البحث'),
+              _buildNavBarItem(booksProvider, 2, Icons.auto_stories_rounded, 'مكتبتي'),
+              _buildNavBarItem(booksProvider, 3, Icons.person_outline_rounded, 'حسابي'),
             ],
           ),
         ),
@@ -221,10 +271,10 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildNavBarItem(AppProvider provider, int index, IconData icon, String label) {
-    final bool isActive = provider.currentMainTabIndex == index;
+  Widget _buildNavBarItem(BooksProvider booksProvider, int index, IconData icon, String label) {
+    final bool isActive = booksProvider.currentMainTabIndex == index;
     return GestureDetector(
-      onTap: () => provider.setMainTab(index),
+      onTap: () => booksProvider.setMainTab(index),
       behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisSize: MainAxisSize.min,
