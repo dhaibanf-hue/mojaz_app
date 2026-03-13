@@ -22,12 +22,7 @@ class AudioPlayerScreen extends StatefulWidget {
 class _AudioPlayerScreenState extends State<AudioPlayerScreen> with WidgetsBindingObserver {
   late AudioPlayer _audioPlayer;
   final TtsService _ttsService = TtsService();
-  
-  bool _isPlaying = false;
   bool _isTtsSpeaking = false;
-  Duration _duration = Duration.zero;
-  Duration _position = Duration.zero;
-  late String _mySessionId;
 
   // Reading Settings
   double _fontSize = 18.0;
@@ -41,11 +36,6 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> with WidgetsBindi
   Timer? _progressSaveTimer;
   final ScrollController _scrollController = ScrollController();
   
-  // Stream subscriptions for proper disposal
-  StreamSubscription? _playerStateSub;
-  StreamSubscription? _positionSub;
-  StreamSubscription? _durationSub;
-  
   // Text Levels
   int _summaryLevel = 1; // 0=Short, 1=Medium, 2=Detailed
 
@@ -54,7 +44,6 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> with WidgetsBindi
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _audioPlayer = AudioPlayer();
-    _mySessionId = DateTime.now().millisecondsSinceEpoch.toString();
     _loadReaderSettings();
     _initAudio();
     _initTts();
@@ -125,7 +114,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> with WidgetsBindi
   void _saveAllProgress() {
     if (!mounted) return;
     final provider = Provider.of<BooksProvider>(context, listen: false);
-    provider.saveBookProgress(widget.book.id, _position.inSeconds);
+    provider.saveBookProgress(widget.book.id, _audioPlayer.position.inSeconds);
   }
 
   Future<void> _initTts() async {
@@ -147,8 +136,18 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> with WidgetsBindi
   }
 
   void _scrollToCurrentSentence() {
-    // Basic scrolling logic - ideally would calculate offset of specific text span
-    // For now, scroll incrementally or keeping it simple
+    try {
+      if (_scrollController.hasClients && _sentences.isNotEmpty) {
+        final offset = _currentSentenceIndex * 50.0;
+        _scrollController.animateTo(
+          offset,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    } catch (e) {
+      debugPrint('Scroll error: $e');
+    }
   }
 
   Future<void> _initAudio() async {
@@ -181,31 +180,6 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> with WidgetsBindi
         await _audioPlayer.seek(Duration(seconds: savedProgress));
       }
 
-      // Add state listeners to update UI
-      _playerStateSub = _audioPlayer.playerStateStream.listen((state) {
-        if (mounted) {
-          setState(() {
-            _isPlaying = state.playing;
-          });
-        }
-      });
-
-      _positionSub = _audioPlayer.positionStream.listen((pos) {
-        if (mounted) {
-          setState(() {
-            _position = pos;
-          });
-        }
-      });
-
-      _durationSub = _audioPlayer.durationStream.listen((dur) {
-        if (mounted) {
-          setState(() {
-            _duration = dur ?? Duration.zero;
-          });
-        }
-      });
-
     } catch (e) {
       debugPrint("Error loading audio: $e");
     }
@@ -215,9 +189,6 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> with WidgetsBindi
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _progressSaveTimer?.cancel();
-    _playerStateSub?.cancel();
-    _positionSub?.cancel();
-    _durationSub?.cancel();
     _saveAllProgress();
     _audioPlayer.dispose();
     _ttsService.stop();
@@ -235,8 +206,27 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> with WidgetsBindi
       _audioPlayer.pause();
       _saveAllProgress();
     } else {
+      if (_isTtsSpeaking) {
+        _ttsService.stop();
+      }
       _audioPlayer.play();
     }
+  }
+
+  void _toggleTts() {
+    if (_isTtsSpeaking) {
+      _stopTts();
+    } else {
+      _startTts();
+    }
+  }
+
+  void _startTts() {
+    if (_audioPlayer.playing) {
+      _audioPlayer.pause();
+    }
+    setState(() => _isTtsSpeaking = true);
+    _ttsService.speak(_sentences[_currentSentenceIndex]);
   }
   
   void _stopTts() {
@@ -260,19 +250,28 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> with WidgetsBindi
       builder: (context) => ReaderSettingsModal(
         currentFontSize: _fontSize,
         currentThemeId: _activeThemeId,
-        onFontSizeChanged: (val) => setState(() => _fontSize = val),
-        onThemeChanged: (id, bg, text) => setState(() {
-          _activeThemeId = id;
-          _themeBgColor = bg;
-          _themeTextColor = text;
-        }),
-        onReset: () => setState(() {
-           final isDark = Theme.of(context).brightness == Brightness.dark;
-           _fontSize = 18.0;
-           _activeThemeId = isDark ? 'dark' : 'white';
-           _themeBgColor = isDark ? AppColors.newBackgroundDark : Colors.white;
-           _themeTextColor = isDark ? Colors.white : const Color(0xFF1E293B);
-        }),
+        onFontSizeChanged: (val) {
+          setState(() => _fontSize = val);
+          _saveReaderSettings();
+        },
+        onThemeChanged: (id, bg, text) {
+          setState(() {
+            _activeThemeId = id;
+            _themeBgColor = bg;
+            _themeTextColor = text;
+          });
+          _saveReaderSettings();
+        },
+        onReset: () {
+          setState(() {
+             final isDark = Theme.of(context).brightness == Brightness.dark;
+             _fontSize = 18.0;
+             _activeThemeId = isDark ? 'dark' : 'white';
+             _themeBgColor = isDark ? AppColors.newBackgroundDark : Colors.white;
+             _themeTextColor = isDark ? Colors.white : const Color(0xFF1E293B);
+          });
+          _saveReaderSettings();
+        },
       ),
     );
   }
@@ -292,15 +291,42 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> with WidgetsBindi
             MaterialPageRoute(builder: (_) => DriveModeScreen(book: widget.book)),
           );
         },
-        downloadAction: () {
+        downloadAction: () async {
            final provider = Provider.of<BooksProvider>(context, listen: false);
            if (provider.downloadedBookIds.contains(widget.book.id)) {
+              provider.toggleDownload(widget.book.id);
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حذف التحميل')));
+              Navigator.pop(context);
            } else {
+              Navigator.pop(context); // Close more options modal
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => AlertDialog(
+                  title: const Text('جاري التحميل...'),
+                  content: SizedBox(
+                    width: double.maxFinite,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        SizedBox(height: 20),
+                        LinearProgressIndicator(minHeight: 6),
+                        SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+              
+              // Mock download delay
+              await Future.delayed(const Duration(seconds: 3));
+              
+              if (!context.mounted) return;
+              
+              Navigator.pop(context); // Close dialog
               provider.markAsDownloaded(widget.book.id);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('جاري التحميل...')));
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم التحميل بنجاح')));
            }
-           Navigator.pop(context);
         },
         sleepTimerAction: () {
            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم ضبط مؤقت النوم: 15 دقيقة')));
@@ -448,13 +474,22 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> with WidgetsBindi
                         const SizedBox(height: 24),
 
                         // Text Content
-                        Text(
-                          'الملخص (${_getLevelName()})',
-                          style: GoogleFonts.notoKufiArabic(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.newPrimary,
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'الملخص (${_getLevelName()})',
+                              style: GoogleFonts.notoKufiArabic(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.newPrimary,
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(_isTtsSpeaking ? Icons.stop_circle_rounded : Icons.play_circle_fill_rounded, color: AppColors.newPrimary, size: 28),
+                              onPressed: _toggleTts,
+                            )
+                          ],
                         ),
                         const SizedBox(height: 12),
                         Text(
@@ -569,8 +604,6 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> with WidgetsBindi
                      return LayoutBuilder(
                        builder: (context, constraints) {
                          final count = 30; // Segments count
-                         final width = constraints.maxWidth;
-                         final segWidth = (width - (count - 1) * 2) / count;
                          
                          final totalSec = duration.inSeconds > 0 ? duration.inSeconds : 1;
                          final currentSec = position.inSeconds;
